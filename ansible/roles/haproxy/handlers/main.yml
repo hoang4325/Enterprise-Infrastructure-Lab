@@ -1,0 +1,6 @@
+#File nay chi duoc goi khi task su dung "notify"
+
+- name: Restart HAProxy
+  service: 
+    name: "{{ haproxy_service }}"
+    state: restarted

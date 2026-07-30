@@ -1,0 +1,10 @@
+# Các biến mặc định của HAProxy
+
+#Tên package cần cài
+haproxy_package: haproxy
+
+#Tên service của HAProxy
+haproxy_service: haproxy
+
+#Đường dẫn file cấu hình
+haproxy_config_file: /etc/haproxy/haproxy.cfg

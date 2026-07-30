@@ -1,0 +1,24 @@
+# Cài đặt HAProxy
+- name: Install HAProxy package
+  apt:
+    name: "{{ haproxy_package }}"
+    state: present
+
+#Sao chep file cau hinh HAProxy len may chu
+- name: Deploy HAProxy configuration
+  template:
+    src: haproxy.cfg.j2
+    dest: "{{ haproxy_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+#Neu file cau hinh co thay doi thi goi Handler de restart dich vu HAProxy
+  notify:
+    - Restart HAProxy
+
+#Tu dong chay khi bat may
+- name: Enable and start HAProxy service
+  service:
+    name: "{{ haproxy_service }}"
+    enable: true
+    state: started
