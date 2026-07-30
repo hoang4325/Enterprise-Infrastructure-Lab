@@ -1,0 +1,24 @@
+# Chuẩn hóa máy chủ trước khi triển khai dịch vụ
+
+# Update package cache
+- name: Update apt package cache
+  apt:
+    update_cache: true
+
+# Upgrade toàn bộ package
+- name: Upgrade installed packages
+  apt:
+    upgrade: dist
+
+# Cài package cần thiết
+- name: Install common packages
+  apt: 
+    name:
+      - curl
+      - wget
+      - git  
+      - vim
+      - unzip
+      - net-tools
+    state: present
+
