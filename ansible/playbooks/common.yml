@@ -1,0 +1,9 @@
+# Thực thi role common trên toàn bộ hạ tầng
+
+- name: Prepare all infrastructure servers
+  hosts: all
+  become: true
+
+  roles:
+    - common
+
