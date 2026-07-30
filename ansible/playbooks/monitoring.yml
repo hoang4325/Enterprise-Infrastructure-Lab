@@ -1,0 +1,8 @@
+#Cấu hình monitoring
+
+- name: Configure Monitoring Prometheus+Grafana
+  hosts: monitor
+  become: true
+
+  roles:
+    - monitoring

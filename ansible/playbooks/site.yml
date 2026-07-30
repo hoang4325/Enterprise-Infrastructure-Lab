@@ -1,0 +1,8 @@
+
+
+- import_playbook: common.yml
+- import_playbook: haproxy.yml
+- import_playbook: mariadb.yml
+- import_playbook: monitoring.yml
+- import_playbook: storagenfs.yml
+- import_playbook: webserver.yml

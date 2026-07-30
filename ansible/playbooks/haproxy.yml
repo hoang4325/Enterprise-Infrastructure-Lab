@@ -1,0 +1,8 @@
+# Cấu hình HAProxy load balancer
+
+- name: Configure HAProxy server
+  hosts: loadbalancer
+  become: true
+
+  roles: 
+    - haproxy

@@ -1,0 +1,8 @@
+# Cấu hình bộ nhớ dữ liệu 
+
+- name: Configure Storage NFS
+  hosts: storagenfs
+  become: true
+
+  roles:
+    - storage
