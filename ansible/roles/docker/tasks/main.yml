@@ -1,0 +1,23 @@
+# Cai dat docker engine
+- name: Install Docker Engine
+  apt:  
+    name: "{{ docker_package }}"
+    state: present
+
+
+# Dam bao docker luon duoc bat
+- name: Enable Docker
+  apt: 
+    name: "{{ docker_service }}"
+    enabled: true
+    state: started
+
+# Kiem tra trang thai docker
+- name: Check Docker Service
+  service_facts:
+
+# Hien thi trang thai docker
+- name: Show Docker Status
+  debug: 
+    msg: "Docker service is running"
+  when: ansible_facts.services['docker.service'].state == 'running'

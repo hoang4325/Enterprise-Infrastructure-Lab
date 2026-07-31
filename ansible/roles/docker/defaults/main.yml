@@ -1,0 +1,8 @@
+#Tên package Docker
+docker_package: docker.io
+
+#Tên package Docker Compose
+docker_compose_package: docker-compose-v2
+
+#Ten service Docker
+docker_service: docker
