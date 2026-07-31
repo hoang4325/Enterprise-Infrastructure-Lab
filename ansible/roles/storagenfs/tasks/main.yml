@@ -3,7 +3,7 @@
   apt:  
     name: "{{ nfs_package }}"
     state: present
-  tag: 
+  tags: 
     - install
 
 # Tao thu muc chia se
@@ -19,7 +19,7 @@
 - name: Deploy NFS exports configuration
   template: 
     src: exports.j2
-    dest: "{{ nfs_expors_file }}"
+    dest: "{{ nfs_exports_file }}"
     owner: root
     group: root
     mode: "0644"

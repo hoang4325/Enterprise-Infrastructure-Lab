@@ -1,11 +1,11 @@
 # Package MariaDB
-mariadb_package: mariadb_server
+mariadb_package: mariadb-server
 
 # Ten service
 mariadb_service: mariadb
 
 # File cau hinh
-mariadb_config_file: /etc/maria/mariadb.conf.d/50-server.cnf
+mariadb_config_file: /etc/mysql/mariadb.conf.d/99-custom.cnf
 
 # IP nghe
 mariadb_bind_address: 0.0.0.0

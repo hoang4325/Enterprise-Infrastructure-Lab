@@ -7,7 +7,7 @@
 # Trien khai file cau hinh MariaDB
 - name: Deploy MariaDB Configuration
   template:
-    src: 50-server.cnf.j2
+    src: mariadb.cnf.j2
     dest: "{{ mariadb_config_file }}"
     owner: root
     group: root

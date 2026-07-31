@@ -5,10 +5,10 @@ nfs_package: nfs-kernel-server
 nfs_service: nfs-kernel-server
 
 # Thu muc chia se
-nfs_share_directory: /srv/nfs/shared
+nfs_shared_directory: /srv/nfs/shared
 
 # File exports
-nfs_exports_file: /etc/exports.d/app.exports
+nfs_exports_file: /etc/exports
 
 # Quyen truy cap mang noi bo
 nfs_allowed_network: 10.10.0.0/23
