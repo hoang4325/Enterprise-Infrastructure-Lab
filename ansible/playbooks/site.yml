@@ -8,7 +8,7 @@
 
 - import_playbook: mariadb.yml
 
-# - import_playbook: webserver.yml
+- import_playbook: webserver.yml
 
 - import_playbook: haproxy.yml
 
