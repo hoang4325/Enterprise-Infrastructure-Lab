@@ -1,7 +1,9 @@
 # Cấu hình Docker
 
 - name: Configure Docker
-  hosts: docker
+  hosts: 
+    - webserver
+    - monitoring
   become: true
 
   roles:

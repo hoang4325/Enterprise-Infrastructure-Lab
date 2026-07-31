@@ -1,8 +1,0 @@
-# Cấu hình webserver
-
-- name: Configure WebServer 
-  hosts: webserver
-  become: true
-
-  roles:
-    - webserver
