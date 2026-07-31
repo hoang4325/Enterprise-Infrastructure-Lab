@@ -1,0 +1,38 @@
+# Cai dat NFS server
+- name: Install NFS Server
+  apt:  
+    name: "{{ nfs_package }}"
+    state: present
+
+# Tao thu muc chia se
+- name: Create Shared Directory
+  file:   
+    path: "{{ nfs_shared_directory }}"
+    state: directory
+    owner: nobody
+    group: nogroup
+    mode: "0755"
+
+# Trien khai file exports
+- name: Deploy NFS exports configuration
+  template: 
+    src: exports.j2
+    dest: "{{ nfs_expors_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+  notify:
+    - Restart NFS Server
+
+# Dam bao NFS luon khoi dong cung OS
+- name: Enable NFS Service
+  service:
+    name: "{{ nfs_service }}"
+    enabled: true
+    state: started
+
+
+
+
+

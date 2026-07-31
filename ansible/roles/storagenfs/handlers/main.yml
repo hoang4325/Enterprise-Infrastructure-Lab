@@ -1,0 +1,4 @@
+- name: Restart NFS Server
+  service:  
+    name: "{{ nfs_service }}"
+    state: restarted
