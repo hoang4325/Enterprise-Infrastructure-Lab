@@ -1,0 +1,75 @@
+# Cai dat Nginx
+- name: Install Nginx
+  apt: 
+    name: "{{ nginx_package }}"
+    state: present
+    update_cache: true
+
+# Tao thu muc mount NFS
+- name: Create Mount Directory
+  file:
+    path: "{{ nfs_mount_directory }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+# Cài đặt NFS Client
+- name: Install NFS Client
+  apt:
+    name: nfs-common
+    state: present
+
+- name: Wait for NFS Server
+  wait_for:
+    host: "{{ nfs_server }}"
+    port: 2049
+    timeout: 30
+    
+# Mount thu muc NFS
+- name: Mount NFS Share
+  mount:
+    src: "{{ nfs_server }}:{{ nfs_remote_directory }}"
+    path: "{{ nfs_mount_directory }}"
+    fstype: nfs
+    opts: defaults
+    state: mounted
+
+# Trien khai cau hinh Nginx
+- name: Deploy Nginx Configuration
+  template:
+    src: nginx.conf.j2
+    dest: "{{ nginx_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Nginx
+
+# Khoi dong Nginx
+- name: Enable Nginx Service
+  service:
+    name: "{{ nginx_service }}"
+    enabled: true
+    state: started
+
+# Thu thập thông tin service
+- name: Collect Service Facts
+  service_facts:
+
+# Thu thap trang thai
+- name: Show Nginx Status
+  debug:  
+    msg: "Nginx service is running"
+  when: ansible_facts.services['nginx.service'].state == "running"
+
+# Kiem tra phien ban
+- name: Check Nginx Version
+  command: nginx -v
+  register: nginx_version
+  changed_when: false
+  failed_when: false
+
+# Hien thi phien ban
+- name: Show Nginx Version
+  debug: 
+    msg: "{{ nginx_version.stderr }}"

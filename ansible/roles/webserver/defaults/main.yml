@@ -1,0 +1,17 @@
+# Package Nginx
+nginx_package: nginx
+
+# Ten service
+nginx_service: nginx
+
+# IP NFS server
+nfs_server: 10.10.0.240
+
+# Thu muc chia se NFS server
+nfs_remote_directory: /srv/nfs/shared
+
+# Thu muc mount tren Web Server
+nfs_mount_directory: /var/www/html
+
+# File cau hinh nginx
+nginx_config_file: /etc/nginx/sites-available/default
