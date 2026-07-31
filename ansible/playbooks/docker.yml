@@ -1,0 +1,8 @@
+# Cấu hình Docker
+
+- name: Configure Docker
+  hosts: docker
+  become: true
+
+  roles:
+    - docker
