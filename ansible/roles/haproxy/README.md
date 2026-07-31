@@ -46,7 +46,7 @@ Role này chỉ áp dụng cho nhóm máy chủ:
 loadbalancer
 ```
 
-##Kết quả sau khi chạy
+## Kết quả sau khi chạy
 - HAProxy được cài đặt
 - File cấu hình được triển khai
 - Dịch vụ HAProxy họat động
