@@ -1,0 +1,14 @@
+# Package MariaDB
+mariadb_package: mariadb_server
+
+# Ten service
+mariadb_service: mariadb
+
+# File cau hinh
+mariadb_config_file: /etc/maria/mariadb.conf.d/50-server.cnf
+
+# IP nghe
+mariadb_bind_address: 0.0.0.0
+
+# Port mac dinh
+mariadb_port: 3306

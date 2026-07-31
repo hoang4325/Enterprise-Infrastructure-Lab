@@ -1,0 +1,24 @@
+# Cai dat Mariadb server
+- name: Install MariaDB Server
+  apt: 
+    name: "{{ mariadb_package }}"
+    state: present
+
+# Trien khai file cau hinh MariaDB
+- name: Deploy MariaDB Configuration
+  template:
+    src: 50-server.cnf.j2
+    dest: "{{ mariadb_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+  notify:
+    - Restart MariaDB
+
+# Dam bao DB luon khoi dong cung OS
+- name: Enable MariaDB service
+  service:
+    name: "{{ mariadb_service }}"
+    enabled: true
+    state: started
