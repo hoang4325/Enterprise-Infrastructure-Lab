@@ -1,0 +1,45 @@
+# Dam bao docker dang hoat dong
+- name: Ensure Docker service is running
+  service: 
+    name: "{{ docker_service }}"
+    state: started
+    enabled: true
+
+# Tao thu muc Monitoring
+- name: Create monitoring directory
+  file: 
+    path: "{{ monitoring_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Trien khai cau hinh Prometheus
+- name: Deploy Prometheus Configuration
+  template:   
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_directory }}/{{ prometheus_config }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+  notify:
+    - Restart Monitoring Stack
+
+# Trien khai Docker Compose
+- name: Deploy Docker Compose configuration
+  template: 
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_directory }}/{{ compose_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+  notify:
+    - Restart Monitoring Stack
+
+# Khoi chay Monitoring Stack
+- name: Start Monitoring Stack
+  command: 
+    cmd: docker compose up -d
+    chdir: "{{ monitoring_directory }}"

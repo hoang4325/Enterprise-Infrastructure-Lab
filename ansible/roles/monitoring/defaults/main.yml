@@ -1,0 +1,11 @@
+# Thu muc chua Monitoring Stack
+monitoring_directory: /opt/monitoring
+
+# File Docker Compose
+compose_file: docker-compose.yml
+
+# File cau hinh Prometheus
+prometheus_config: prometheus.yml
+
+# Ten service Docker
+docker_service: docker

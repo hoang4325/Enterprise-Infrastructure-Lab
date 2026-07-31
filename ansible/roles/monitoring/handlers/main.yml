@@ -1,0 +1,4 @@
+- name: Restart Monitoring Stack
+  command:  
+    cmd: docker compose up -d
+    chdir: "{{ monitoring_directory }}"
