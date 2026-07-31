@@ -3,6 +3,8 @@
   apt:  
     name: "{{ nfs_package }}"
     state: present
+  tag: 
+    - install
 
 # Tao thu muc chia se
 - name: Create Shared Directory
@@ -24,6 +26,7 @@
 
   notify:
     - Restart NFS Server
+    - Reload NFS Exports
 
 # Dam bao NFS luon khoi dong cung OS
 - name: Enable NFS Service

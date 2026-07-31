@@ -2,3 +2,8 @@
   service:  
     name: "{{ nfs_service }}"
     state: restarted
+
+- name: Reload NFS Exports
+  command: exportfs -ra
+
+  
