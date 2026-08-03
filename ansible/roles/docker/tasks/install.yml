@@ -1,0 +1,13 @@
+# Cap nhat package cache
+- name: Update apt cache
+  apt: 
+    update_cache: yes
+
+# Cat dat docker engine va cac package lien quan
+- name: Install Docker packages
+  apt:  
+    name: "{{ docker_packages }}"
+    state: present
+
+  
+    

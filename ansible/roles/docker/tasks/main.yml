@@ -1,77 +1,19 @@
-# Cài đặt các package cần thiết
-- name: Install prerequisite packages
-  apt:
-    name:
-      - ca-certificates
-      - curl
-      - gnupg
-    state: present
-    update_cache: true
+- name: Configure Docker repository
+  import_tasks: repository.yml
 
-# Tạo thư mục lưu Docker GPG Key
-- name: Create Docker keyring directory
-  file:
-    path: "{{ docker_keyring_directory }}"
-    state: directory
-    mode: "0755"
+- name: Install Docker Engine
+  import_tasks: install.yml
 
-# Tải Docker GPG Key
-- name: Download Docker GPG key
-  get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: "{{ docker_gpg_key }}"
-    mode: "0644"
+- name: Configure Docker Service
+  import_tasks: service.yml
 
-# Thêm Docker Repository
-- name: Add Docker repository
-  apt_repository:
-    repo: "{{ docker_repository }}"
-    state: present
+- name: Configure Docker User
+  import_tasks: users.yml
 
-# Cập nhật package cache
-- name: Update apt package cache
-  apt:
-    update_cache: true
+- name: Configure Docker Daemon
+  import_tasks: daemon.yml
 
-# Cài Docker Engine
-- name: Install Docker packages
-  apt:
-    name: "{{ docker_packages }}"
-    state: present
+- name: Verify Docker Installation
+  import_tasks: verify.yml
 
-# Đảm bảo Docker luôn khởi động cùng hệ điều hành
-- name: Enable Docker service
-  service:
-    name: "{{ docker_service }}"
-    enabled: true
-    state: started
-
-# Thêm người dùng hiện tại vào nhóm Docker
-- name: Add current user to docker group
-  user:
-    name: "{{ ansible_user }}"
-    groups: docker
-    append: true
-
-# Thu thập trạng thái các service
-- name: Collect service facts
-  service_facts:
-
-# Hiển thị trạng thái Docker
-- name: Show Docker status
-  debug:
-    msg: "Docker service is running."
-  when:
-    - ansible_facts.services['docker.service'] is defined
-    - ansible_facts.services['docker.service'].state == 'running'
-
-# Kiểm tra phiên bản Docker
-- name: Check Docker version
-  command: docker --version
-  register: docker_version
-  changed_when: false
-
-# Hiển thị phiên bản Docker
-- name: Show Docker version
-  debug:
-    var: docker_version.stdout
+  

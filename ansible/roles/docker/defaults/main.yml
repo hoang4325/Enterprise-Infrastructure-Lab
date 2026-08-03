@@ -1,11 +1,3 @@
-# Thư mục lưu GPG Key của Docker
-docker_keyring_directory: /etc/apt/keyrings
-
-# File GPG Key
-docker_gpg_key: /etc/apt/keyrings/docker.asc
-
-# Docker Repository
-docker_repository: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
 
 # Các package Docker cần cài
 docker_packages:
@@ -15,5 +7,13 @@ docker_packages:
   - docker-buildx-plugin
   - docker-compose-plugin
 
-# Tên service Docker
-docker_service: docker
+# Danh sach user
+docker_users:
+  - "{{ ansible_user }}"
+
+# Cau hinh mac dinh cua Docker daemon
+docker_daemon_config:
+  log-driver: json-file
+  log-opts: 
+    max-size: "10m"
+    max-file: "3"

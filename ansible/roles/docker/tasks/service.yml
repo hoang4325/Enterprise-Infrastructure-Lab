@@ -1,0 +1,7 @@
+# Tu dong chay Docker
+- name: Enable Docker Service
+  service:  
+    name: docker
+    state: started
+    enabled: yes
+

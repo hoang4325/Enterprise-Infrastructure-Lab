@@ -1,0 +1,24 @@
+# Kiem tra Docker daemon
+- name: Verify Docker daemon
+  command: docker info
+  register: docker_info
+  changed_when: false
+
+# Neu docker khong hoat dong thi dung playbook luon
+- name: Validate Docker daemon
+  assert:
+    that:
+      - docker_info.rc == 0
+    fail_msg: Docker daemon không họat động.
+
+# Hien thi phien ban Docker
+- name: Display Docker version
+  command: docker --version
+  register: docker_version
+  changed_when: false
+
+- debug:
+    var: docker_version.stdout
+
+    
+

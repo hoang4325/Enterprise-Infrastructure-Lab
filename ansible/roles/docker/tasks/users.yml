@@ -1,0 +1,8 @@
+# Them user vao nhom docker (User thuoc nhom docker thi khong can su dung sudo)
+- name: Add users to docker group
+  user: 
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users }}"
+
