@@ -8,3 +8,5 @@ haproxy_service: haproxy
 
 #Đường dẫn file cấu hình
 haproxy_config_file: /etc/haproxy/haproxy.cfg
+
+webserver_ip: 10.10.0.220

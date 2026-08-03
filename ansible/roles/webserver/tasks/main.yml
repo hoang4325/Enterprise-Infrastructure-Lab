@@ -10,8 +10,6 @@
   file:
     path: "{{ nfs_mount_directory }}"
     state: directory
-    owner: www-data
-    group: www-data
     mode: "0755"
 
 # Cài đặt NFS Client
@@ -25,7 +23,7 @@
     host: "{{ nfs_server }}"
     port: 2049
     timeout: 30
-    
+
 # Mount thu muc NFS
 - name: Mount NFS Share
   mount:

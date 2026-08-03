@@ -1,17 +1,28 @@
-global 
-   daemon
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    user haproxy
+    group haproxy
+    daemon
 
 defaults
-   mode http
-   timeout connect 5s
-   timeout client 30s
-   timeout server 30s
+    log global
+    mode http
+
+    option httplog
+    option dontlognull
+
+    timeout connect 5s
+    timeout client 30s
+    timeout server 30s
 
 frontend http_front
-   bind *:80
-   default_backend web_servers
+    bind *:80
+    mode http
+    default_backend web_servers
 
 backend web_servers
-   balance roundrobin
+    mode http
+    balance roundrobin
 
-   server web1 10.10.0.220:80 check
+    server web1 {{ webserver_ip }}:80 check
