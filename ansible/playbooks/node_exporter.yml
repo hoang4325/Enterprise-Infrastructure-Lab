@@ -1,0 +1,9 @@
+# Cài đặt Node Exporter trên toàn bộ máy chủ để Prometheus thu thập metrics
+
+- name: Configure Node Exporter
+  # Triển khai Node Exporter trên toàn bộ máy trong inventory.
+  hosts: all
+  become: true
+
+  roles:
+    - node_exporter

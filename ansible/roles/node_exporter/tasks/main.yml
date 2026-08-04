@@ -1,0 +1,103 @@
+---
+# Kiểm tra kiến trúc CPU để chọn đúng binary Node Exporter.
+- name: Validate supported CPU architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in node_exporter_architecture_map
+    fail_msg: >-
+      CPU architecture '{{ ansible_architecture }}' chưa được khai báo trong
+      node_exporter_architecture_map.
+
+# Chuẩn bị tên binary và định dạng archive cho máy đích.
+- name: Set Node Exporter release variables
+  ansible.builtin.set_fact:
+    node_exporter_platform: "{{ node_exporter_architecture_map[ansible_architecture] }}"
+    node_exporter_archive: >-
+      node_exporter-{{ node_exporter_version }}.linux-{{ node_exporter_architecture_map[ansible_architecture] }}.tar.gz
+
+# Tạo group hệ thống riêng cho Node Exporter.
+- name: Create Node Exporter group
+  ansible.builtin.group:
+    name: "{{ node_exporter_group }}"
+    system: true
+
+# Tạo user hệ thống bị giới hạn quyền, không được đăng nhập tương tác.
+- name: Create restricted Node Exporter user
+  ansible.builtin.user:
+    name: "{{ node_exporter_user }}"
+    group: "{{ node_exporter_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: /nonexistent
+    create_home: false
+
+# Tạo thư mục lưu bản phát hành đã giải nén.
+- name: Create release directory
+  ansible.builtin.file:
+    path: "{{ node_exporter_release_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Tải archive từ nguồn chính thức và kiểm tra checksum SHA-256.
+- name: Download pinned Node Exporter archive
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/{{ node_exporter_archive }}"
+    dest: "/tmp/{{ node_exporter_archive }}"
+    checksum: "sha256:{{ node_exporter_sha256[node_exporter_platform] }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+# Giải nén archive vào thư mục phát hành tương ứng với phiên bản.
+- name: Extract Node Exporter release
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ node_exporter_archive }}"
+    dest: "{{ node_exporter_release_dir }}"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+    creates: "{{ node_exporter_release_dir }}/node_exporter"
+
+# Cài binary vào thư mục executable của hệ thống.
+- name: Install Node Exporter binary
+  ansible.builtin.copy:
+    src: "{{ node_exporter_release_dir }}/node_exporter"
+    dest: "{{ node_exporter_install_dir }}/node_exporter"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Restart Node Exporter
+
+# Triển khai systemd unit để quản lý Node Exporter như một service.
+- name: Install Node Exporter systemd unit
+  ansible.builtin.template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Node Exporter
+
+# Bật service cùng hệ điều hành và khởi động Node Exporter.
+- name: Enable and start Node Exporter
+  ansible.builtin.systemd_service:
+    name: node_exporter
+    enabled: true
+    state: started
+
+# Chạy các handler đang chờ trước khi thực hiện bước kiểm tra.
+- name: Apply pending Node Exporter restart before validation
+  ansible.builtin.meta: flush_handlers
+
+# Kiểm tra Node Exporter đã trả về endpoint metrics nội bộ.
+- name: Verify Node Exporter metrics endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ node_exporter_port }}/metrics"
+    method: GET
+    status_code: 200
+    return_content: false
+  register: node_exporter_metrics
+  changed_when: false
