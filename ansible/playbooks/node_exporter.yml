@@ -5,5 +5,6 @@
   hosts: all
   become: true
 
+# Role này cài exporter trên cả các node nguồn dữ liệu và máy Monitoring.
   roles:
     - node_exporter

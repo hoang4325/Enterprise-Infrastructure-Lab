@@ -1,4 +1,5 @@
+# Tạo lại container để Grafana nạp datasource/dashboard mới; named volume giữ dữ liệu.
 - name: Restart Monitoring Stack
-  command:  
-    cmd: docker compose up -d
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
     chdir: "{{ monitoring_directory }}"

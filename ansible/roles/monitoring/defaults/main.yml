@@ -1,14 +1,40 @@
-# Thu muc chua Monitoring Stack
+# Thư mục gốc trên máy Monitoring chứa Compose, cấu hình và dữ liệu dịch vụ.
 monitoring_directory: /opt/monitoring
 
-# File Docker Compose
+# Tên file Docker Compose được triển khai vào thư mục gốc.
 compose_file: docker-compose.yml
 
-# File cau hinh Prometheus
+# Tên file cấu hình chính của Prometheus.
 prometheus_config: prometheus.yml
+# URL người dùng mở được để các link cảnh báo trỏ đúng về Prometheus.
+prometheus_external_url: "http://10.10.0.250:9090"
+# Thư mục và file chứa các alert rule được Prometheus nạp.
+prometheus_alerts_directory: "{{ monitoring_directory }}/alerts"
+prometheus_alerts_config: infrastructure.yml
 
-# Ten service Docker
+# Tên file cấu hình Alertmanager và cổng giao diện quản trị.
+alertmanager_config: alertmanager.yml
+alertmanager_port: 9093
+# URL bên ngoài dùng trong liên kết từ Alertmanager.
+alertmanager_external_url: "http://10.10.0.250:9093"
+
+# Hai biến này lấy từ Ansible Vault; để trống thì Alertmanager dùng receiver noop.
+alertmanager_telegram_bot_token: ""
+alertmanager_telegram_chat_id: ""
+
+# Tên service Docker trên máy Monitoring.
 docker_service: docker
 
-# Cong Node Exporter tren cac may duoc Prometheus scrape
+# Cổng Node Exporter mà Prometheus sẽ scrape trên các máy đích.
 node_exporter_port: 9100
+
+# Các thư mục Grafana dùng để tự động nạp datasource và dashboard.
+grafana_provisioning_directory: "{{ monitoring_directory }}/grafana/provisioning"
+grafana_datasources_directory: "{{ grafana_provisioning_directory }}/datasources"
+grafana_dashboards_provisioning_directory: "{{ grafana_provisioning_directory }}/dashboards"
+grafana_dashboards_directory: "{{ monitoring_directory }}/grafana/dashboards"
+
+# Pin image theo phiên bản để triển khai không thay đổi bất ngờ.
+prometheus_image: prom/prometheus:v3
+grafana_image: grafana/grafana-oss:13.0.2
+alertmanager_image: prom/alertmanager:v0.33.1

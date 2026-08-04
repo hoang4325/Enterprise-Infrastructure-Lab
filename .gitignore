@@ -1,0 +1,4 @@
+# Local secrets and Ansible Vault files
+ansible/group_vars/monitoring/vault.yml
+ansible/group_vars/monitoring/*.secret.yml
+*.vault-pass

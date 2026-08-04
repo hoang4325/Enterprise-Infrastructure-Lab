@@ -1,0 +1,43 @@
+groups:
+  - name: infrastructure
+    interval: 30s
+    rules:
+      # Cảnh báo khi Node Exporter mất kết nối trong 2 phút.
+      - alert: NodeExporterDown
+        expr: up{job="node_exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node Exporter không phản hồi trên {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "Prometheus không scrape được Node Exporter trên {% raw %}{{ $labels.instance }}{% endraw %} trong hơn 2 phút."
+
+      # Cảnh báo CPU cao kéo dài để tránh cảnh báo giả do spike ngắn.
+      - alert: HostHighCPU
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{job="node_exporter",mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU cao trên {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "CPU đang trên 80% trong ít nhất 5 phút."
+
+      # Cảnh báo RAM sử dụng vượt ngưỡng 85% trong 5 phút.
+      - alert: HostHighMemory
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes{job="node_exporter"} / node_memory_MemTotal_bytes{job="node_exporter"})) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RAM cao trên {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "RAM đang được sử dụng trên 85% trong ít nhất 5 phút."
+
+      # Cảnh báo filesystem gốc gần đầy.
+      - alert: HostFilesystemAlmostFull
+        expr: 100 * (1 - (node_filesystem_avail_bytes{job="node_exporter",mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{job="node_exporter",mountpoint="/",fstype!~"tmpfs|overlay"})) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Filesystem / gần đầy trên {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "Filesystem gốc đã sử dụng trên 85% trong ít nhất 10 phút."

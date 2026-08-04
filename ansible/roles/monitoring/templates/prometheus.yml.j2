@@ -1,8 +1,21 @@
+# Khoảng thời gian Prometheus lấy metrics từ các target.
 global:
   scrape_interval: 15s
 
+# Nạp toàn bộ alert rule đã được Ansible triển khai vào thư mục này.
+rule_files:
+  - /etc/prometheus/alerts/*.yml
+
+# Gửi các alert đang firing/resolved sang Alertmanager trong cùng Docker network.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
 scrape_configs:
 
+  # Tự giám sát Prometheus để biết chính collector có hoạt động không.
   - job_name: "prometheus"
 
     static_configs:
@@ -10,12 +23,22 @@ scrape_configs:
       - targets:
           - localhost:9090
 
+  # Giám sát CPU, RAM, disk và network của toàn bộ host trong inventory.
   - job_name: "node_exporter"
 
     static_configs:
+    # Mỗi host được tạo thành một target và giữ tên inventory làm label instance.
 {% for host in groups['all'] | sort %}
       - targets:
           - "{{ hostvars[host].ansible_host | default(host) }}:{{ node_exporter_port }}"
         labels:
           instance: "{{ host }}"
 {% endfor %}
+
+  # Theo dõi tình trạng sẵn sàng của Alertmanager.
+  - job_name: "alertmanager"
+
+    static_configs:
+
+      - targets:
+          - alertmanager:9093

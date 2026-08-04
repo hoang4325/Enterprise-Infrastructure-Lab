@@ -1,22 +1,36 @@
-# Dam bao docker dang hoat dong
+# Đảm bảo Docker đang hoạt động trước khi triển khai Monitoring Stack.
 - name: Ensure Docker service is running
-  service: 
+  ansible.builtin.service:
     name: "{{ docker_service }}"
     state: started
     enabled: true
 
-# Tao thu muc Monitoring
+# Tạo thư mục gốc chứa cấu hình và dữ liệu triển khai Monitoring.
 - name: Create monitoring directory
-  file: 
+  ansible.builtin.file:
     path: "{{ monitoring_directory }}"
     state: directory
     owner: root
     group: root
     mode: "0755"
 
-# Trien khai cau hinh Prometheus
+# Tạo các thư mục để Grafana đọc datasource và dashboard được provisioning.
+- name: Create Grafana provisioning directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ grafana_datasources_directory }}"
+    - "{{ grafana_dashboards_provisioning_directory }}"
+    - "{{ grafana_dashboards_directory }}"
+    - "{{ prometheus_alerts_directory }}"
+
+# Triển khai cấu hình Prometheus, bao gồm các target Node Exporter.
 - name: Deploy Prometheus Configuration
-  template:   
+  ansible.builtin.template:
     src: prometheus.yml.j2
     dest: "{{ monitoring_directory }}/{{ prometheus_config }}"
     owner: root
@@ -26,9 +40,64 @@
   notify:
     - Restart Monitoring Stack
 
-# Trien khai Docker Compose
+# Triển khai các rule cảnh báo cho Prometheus.
+- name: Deploy Prometheus alert rules
+  ansible.builtin.template:
+    src: alerts/infrastructure.yml.j2
+    dest: "{{ prometheus_alerts_directory }}/{{ prometheus_alerts_config }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart Monitoring Stack
+
+# Triển khai cấu hình route và receiver của Alertmanager.
+- name: Deploy Alertmanager configuration
+  ansible.builtin.template:
+    src: alertmanager.yml.j2
+    dest: "{{ monitoring_directory }}/{{ alertmanager_config }}"
+    owner: "65534"
+    group: "65534"
+    mode: "0640"
+  notify:
+    - Restart Monitoring Stack
+
+# Triển khai datasource Prometheus tự động cho Grafana.
+- name: Deploy Grafana Prometheus datasource
+  ansible.builtin.template:
+    src: grafana/provisioning/datasources/prometheus.yml.j2
+    dest: "{{ grafana_datasources_directory }}/prometheus.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart Monitoring Stack
+
+# Khai báo thư mục mà Grafana dùng để tự nạp các file dashboard JSON.
+- name: Deploy Grafana dashboard provider
+  ansible.builtin.template:
+    src: grafana/provisioning/dashboards/provider.yml.j2
+    dest: "{{ grafana_dashboards_provisioning_directory }}/provider.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart Monitoring Stack
+
+# Triển khai dashboard tổng quan hạ tầng vào thư mục được Grafana theo dõi.
+- name: Deploy infrastructure dashboard
+  ansible.builtin.copy:
+    src: grafana/dashboards/infrastructure-overview.json
+    dest: "{{ grafana_dashboards_directory }}/infrastructure-overview.json"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart Monitoring Stack
+
+# Triển khai Docker Compose chứa Prometheus và Grafana.
 - name: Deploy Docker Compose configuration
-  template: 
+  ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ monitoring_directory }}/{{ compose_file }}"
     owner: root
@@ -38,8 +107,15 @@
   notify:
     - Restart Monitoring Stack
 
-# Khoi chay Monitoring Stack
+# Kiểm tra Docker Compose trước khi khởi động để phát hiện lỗi YAML/mount.
+- name: Validate Monitoring Compose configuration
+  ansible.builtin.command:
+    cmd: docker compose config --quiet
+    chdir: "{{ monitoring_directory }}"
+  changed_when: false
+
+# Khởi chạy hoặc cập nhật Prometheus và Grafana.
 - name: Start Monitoring Stack
-  command: 
+  ansible.builtin.command:
     cmd: docker compose up -d
     chdir: "{{ monitoring_directory }}"

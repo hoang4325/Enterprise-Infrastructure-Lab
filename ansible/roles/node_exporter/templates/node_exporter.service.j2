@@ -1,3 +1,4 @@
+# Service chạy bằng user riêng và không cho phép đăng nhập tương tác.
 [Unit]
 Description=Prometheus Node Exporter
 Documentation=https://github.com/prometheus/node_exporter
@@ -5,6 +6,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+# Chỉ mở endpoint metrics; các hardening option giới hạn quyền của process.
 User={{ node_exporter_user }}
 Group={{ node_exporter_group }}
 Type=simple

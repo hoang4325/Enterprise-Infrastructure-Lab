@@ -1,10 +1,11 @@
 version: "3.9"
 
+# Prometheus lưu metrics, Alertmanager xử lý cảnh báo và Grafana hiển thị dashboard.
 services:
 
   prometheus:
 
-    image: prom/prometheus:latest
+    image: {{ prometheus_image }}
 
     container_name: prometheus
 
@@ -13,12 +14,44 @@ services:
     ports:
       - "9090:9090"
 
+    # Chỉ đọc file cấu hình; dữ liệu time series được lưu trong volume riêng.
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts:/etc/prometheus/alerts:ro
+      - prometheus-data:/prometheus
+
+    # Khai báo cấu hình, nơi lưu dữ liệu và URL dùng trong link cảnh báo.
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.external-url={{ prometheus_external_url }}"
+
+  alertmanager:
+
+    image: {{ alertmanager_image }}
+
+    container_name: alertmanager
+
+    restart: unless-stopped
+
+    ports:
+      - "{{ alertmanager_port }}:9093"
+
+    # File cấu hình chỉ đọc; state/silence của Alertmanager được lưu bền vững.
+    volumes:
+      - ./{{ alertmanager_config }}:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+
+    # Bật strict UTF-8 để cấu hình matcher mới được kiểm tra chặt chẽ.
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url={{ alertmanager_external_url }}"
+      - "--enable-feature=utf8-strict-mode"
 
   grafana:
 
-    image: grafana/grafana:latest
+    image: {{ grafana_image }}
 
     container_name: grafana
 
@@ -26,3 +59,16 @@ services:
 
     ports:
       - "3000:3000"
+
+    # Grafana giữ database riêng và đọc datasource/dashboard từ các thư mục bind mount.
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+# Các volume này giữ dữ liệu khi container được recreate.
+volumes:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:

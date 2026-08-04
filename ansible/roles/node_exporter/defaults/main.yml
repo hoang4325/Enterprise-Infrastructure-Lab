@@ -1,20 +1,24 @@
 ---
 # Pin phiên bản để các lần triển khai có kết quả ổn định.
 node_exporter_version: "1.11.1"
+# User/group hệ thống chạy service với quyền tối thiểu.
 node_exporter_user: node_exporter
 node_exporter_group: node_exporter
+# Cổng và địa chỉ lắng nghe metrics nội bộ.
 node_exporter_port: 9100
 node_exporter_listen_address: "0.0.0.0"
+# Nơi cài binary và lưu bản release đã giải nén.
 node_exporter_install_dir: /usr/local/bin
 node_exporter_release_dir: "/opt/node_exporter-{{ node_exporter_version }}-{{ node_exporter_platform | default('unknown') }}"
 
+# Chuyển tên kiến trúc Linux sang tên archive do upstream sử dụng.
 node_exporter_architecture_map:
   x86_64: amd64
   amd64: amd64
   aarch64: arm64
   arm64: arm64
 
-# SHA-256 lấy từ release chính thức của prometheus/node_exporter.
+# SHA-256 của từng archive, dùng để phát hiện file tải xuống bị thay đổi.
 node_exporter_sha256:
   amd64: "9f5ea48e5bc7b656f8a91a32e7d7deb89f70f73dabd0d974418aca15f37d6810"
   arm64: "ba1886efbd76cb96b0087c695ea8d1b9cb6e8aa946c996d744e9ee16c8e3591a"
