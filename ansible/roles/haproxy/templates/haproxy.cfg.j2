@@ -58,4 +58,6 @@ backend web_servers
     option httpchk
     http-check send meth GET uri /healthz ver HTTP/1.1 hdr Host localhost
     http-check expect status 200
-    server web1 {{ webserver_ip }}:80 check
+{% for web_host in groups['web'] | sort %}
+    server {{ web_host }} {{ hostvars[web_host].ansible_host | default(web_host) }}:80 check
+{% endfor %}

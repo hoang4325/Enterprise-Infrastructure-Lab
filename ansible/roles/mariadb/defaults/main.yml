@@ -16,5 +16,5 @@ mariadb_port: 3306
 # Thông tin tài khoản ứng dụng; mật khẩu phải được khai báo trong Ansible Vault.
 mariadb_application_database: enterprise_app
 mariadb_application_user: webapp
-mariadb_application_host: "{{ hostvars[groups['web'][0]].ansible_host }}"
+mariadb_application_hosts: "{{ groups['web'] | map('extract', hostvars, 'ansible_host') | list }}"
 mariadb_application_password: ""

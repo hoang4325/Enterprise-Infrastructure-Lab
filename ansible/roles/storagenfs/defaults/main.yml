@@ -10,8 +10,8 @@ nfs_shared_directory: /srv/nfs/shared
 # File exports
 nfs_exports_file: /etc/exports
 
-# Chỉ Web Server được phép mount dữ liệu NFS.
-nfs_allowed_network: "{{ hostvars[groups['web'][0]].ansible_host }}/32"
+# Chỉ các Web Server được phép mount dữ liệu NFS.
+nfs_allowed_clients: "{{ groups['web'] | map('extract', hostvars, 'ansible_host') | list }}"
 
 # Quyen export
 nfs_export_options: rw,sync,no_subtree_check

@@ -92,12 +92,24 @@
 - name: Apply pending Node Exporter restart before validation
   ansible.builtin.meta: flush_handlers
 
+# Chờ socket mở trước khi gọi endpoint metrics, tránh lỗi race condition khi boot.
+- name: Wait for Node Exporter port
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ node_exporter_port }}"
+    state: started
+    timeout: 30
+
 # Kiểm tra Node Exporter đã trả về endpoint metrics nội bộ.
 - name: Verify Node Exporter metrics endpoint
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ node_exporter_port }}/metrics"
     method: GET
+    timeout: 5
     status_code: 200
     return_content: false
   register: node_exporter_metrics
   changed_when: false
+  retries: 3
+  delay: 3
+  until: node_exporter_metrics.status == 200

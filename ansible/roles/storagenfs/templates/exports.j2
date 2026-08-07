@@ -1,1 +1,3 @@
-{{ nfs_shared_directory }} {{ nfs_allowed_network }}({{ nfs_export_options }})
+{% for client_ip in nfs_allowed_clients %}
+{{ nfs_shared_directory }} {{ client_ip }}/32({{ nfs_export_options }})
+{% endfor %}

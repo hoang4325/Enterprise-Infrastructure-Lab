@@ -46,10 +46,13 @@
 - name: Allow Web Server to access MariaDB
   community.general.ufw:
     rule: allow
-    from_ip: "{{ firewall_webserver_ip }}"
+    from_ip: "{{ item }}"
     port: "3306"
     proto: tcp
     comment: "Web Server den MariaDB"
+  loop: "{{ firewall_webserver_ips }}"
+  loop_control:
+    label: "{{ item }}"
   when:
     - firewall_enabled
     - inventory_hostname in groups['database']
@@ -58,10 +61,13 @@
 - name: Allow Web Server to access NFS
   community.general.ufw:
     rule: allow
-    from_ip: "{{ firewall_webserver_ip }}"
+    from_ip: "{{ item }}"
     port: "2049"
     proto: tcp
     comment: "Web Server den NFSv4"
+  loop: "{{ firewall_webserver_ips }}"
+  loop_control:
+    label: "{{ item }}"
   when:
     - firewall_enabled
     - inventory_hostname in groups['storage']
