@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Prometheus lưu metrics, Alertmanager xử lý cảnh báo và Grafana hiển thị dashboard.
 services:
 
@@ -24,6 +22,9 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time={{ prometheus_retention_time }}"
+      - "--storage.tsdb.retention.size={{ prometheus_retention_size }}"
+      - "--storage.tsdb.wal-compression"
       - "--web.external-url={{ prometheus_external_url }}"
 
   alertmanager:

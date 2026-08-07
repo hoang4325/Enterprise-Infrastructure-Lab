@@ -114,8 +114,8 @@
     chdir: "{{ monitoring_directory }}"
   changed_when: false
 
-# Khởi chạy hoặc cập nhật Prometheus và Grafana.
+# Khởi chạy hoặc cập nhật Prometheus và Grafana theo trạng thái mong muốn.
 - name: Start Monitoring Stack
-  ansible.builtin.command:
-    cmd: docker compose up -d
-    chdir: "{{ monitoring_directory }}"
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_directory }}"
+    state: present

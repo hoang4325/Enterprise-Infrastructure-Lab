@@ -2,12 +2,10 @@
 - name: Update apt cache
   apt: 
     update_cache: yes
+    cache_valid_time: 3600
 
 # Cat dat docker engine va cac package lien quan
 - name: Install Docker packages
   apt:  
     name: "{{ docker_packages }}"
     state: present
-
-  
-    

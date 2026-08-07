@@ -32,12 +32,22 @@ groups:
           summary: "RAM cao trên {% raw %}{{ $labels.instance }}{% endraw %}"
           description: "RAM đang được sử dụng trên 85% trong ít nhất 5 phút."
 
-      # Cảnh báo filesystem gốc gần đầy.
+      # Cảnh báo filesystem gốc dùng từ 85% trong 15 phút để có thời gian xử lý.
       - alert: HostFilesystemAlmostFull
-        expr: 100 * (1 - (node_filesystem_avail_bytes{job="node_exporter",mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{job="node_exporter",mountpoint="/",fstype!~"tmpfs|overlay"})) > 85
-        for: 10m
+        expr: 100 * (1 - (node_filesystem_avail_bytes{job="node_exporter",mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{job="node_exporter",mountpoint="/",fstype!~"tmpfs|overlay"})) >= 85
+        for: 15m
         labels:
           severity: warning
         annotations:
-          summary: "Filesystem / gần đầy trên {% raw %}{{ $labels.instance }}{% endraw %}"
-          description: "Filesystem gốc đã sử dụng trên 85% trong ít nhất 10 phút."
+          summary: "Disk gốc gần đầy: {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "Filesystem / đã dùng từ 85%. Kiểm tra df -h, log, Docker image và mở rộng disk nếu cần."
+
+      # Cảnh báo nghiêm trọng khi filesystem gần cạn, có thể làm service dừng.
+      - alert: HostFilesystemCritical
+        expr: 100 * (1 - (node_filesystem_avail_bytes{job="node_exporter",mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{job="node_exporter",mountpoint="/",fstype!~"tmpfs|overlay"})) >= 95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk gốc sắp đầy: {% raw %}{{ $labels.instance }}{% endraw %}"
+          description: "Filesystem / đã dùng từ 95%. Xử lý ngay để tránh mất dịch vụ."

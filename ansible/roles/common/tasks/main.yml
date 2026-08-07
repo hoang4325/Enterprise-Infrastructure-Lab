@@ -4,6 +4,7 @@
 - name: Update apt package cache
   apt:
     update_cache: true
+    cache_valid_time: 3600
 
 # Upgrade toàn bộ package
 - name: Upgrade installed packages
@@ -21,4 +22,3 @@
       - unzip
       - net-tools
     state: present
-

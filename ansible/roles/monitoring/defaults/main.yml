@@ -38,3 +38,7 @@ grafana_dashboards_directory: "{{ monitoring_directory }}/grafana/dashboards"
 prometheus_image: prom/prometheus:v3
 grafana_image: grafana/grafana-oss:13.0.2
 alertmanager_image: prom/alertmanager:v0.33.1
+
+# Giới hạn dữ liệu Prometheus để volume không làm đầy filesystem của monitor.
+prometheus_retention_time: 15d
+prometheus_retention_size: 5GB
