@@ -1,0 +1,6 @@
+# Cấu hình firewall theo vai trò của từng máy chủ.
+- name: Configure layered host firewalls
+  hosts: all
+  become: true
+  roles:
+    - firewall

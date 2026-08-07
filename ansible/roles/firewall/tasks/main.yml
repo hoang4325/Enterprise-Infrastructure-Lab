@@ -1,0 +1,122 @@
+# Cài UFW trước khi tạo rule firewall.
+- name: Install UFW firewall
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+  when: firewall_enabled
+
+# Cho phép SSH từ mạng quản trị trước khi bật chính sách deny.
+- name: Allow SSH from management network
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_management_network }}"
+    port: "{{ firewall_ssh_port }}"
+    proto: tcp
+    comment: "SSH tu mang quan tri"
+  when: firewall_enabled
+
+# HAProxy là điểm duy nhất nhận HTTP/HTTPS từ phía người dùng trong lab.
+- name: Allow HTTP and HTTPS on HAProxy
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+    comment: "Dich vu cong khai cua HAProxy"
+  loop:
+    - "80"
+    - "443"
+  when:
+    - firewall_enabled
+    - inventory_hostname in groups['haproxy']
+
+# Web Server chỉ nhận HTTP từ HAProxy, không nhận trực tiếp từ các máy khác.
+- name: Allow HAProxy to access Web Server
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_loadbalancer_ip }}"
+    port: "80"
+    proto: tcp
+    comment: "HAProxy den Web Server"
+  when:
+    - firewall_enabled
+    - inventory_hostname in groups['web']
+
+# Web Server chỉ được kết nối MariaDB qua cổng database.
+- name: Allow Web Server to access MariaDB
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_webserver_ip }}"
+    port: "3306"
+    proto: tcp
+    comment: "Web Server den MariaDB"
+  when:
+    - firewall_enabled
+    - inventory_hostname in groups['database']
+
+# Web Server chỉ được mount NFSv4 từ storage.
+- name: Allow Web Server to access NFS
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_webserver_ip }}"
+    port: "2049"
+    proto: tcp
+    comment: "Web Server den NFSv4"
+  when:
+    - firewall_enabled
+    - inventory_hostname in groups['storage']
+
+# Prometheus trên monitor cần scrape Node Exporter trên mọi máy.
+- name: Allow Monitoring Server to scrape Node Exporter
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_monitoring_ip }}"
+    port: "9100"
+    proto: tcp
+    comment: "Monitor den Node Exporter"
+  when: firewall_enabled
+
+# Cho phép Prometheus container scrape Node Exporter trên chính monitor.
+- name: Allow Monitoring Docker bridge to scrape local Node Exporter
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_monitoring_container_network }}"
+    port: "9100"
+    proto: tcp
+    comment: "Prometheus container den Node Exporter local"
+  when:
+    - firewall_enabled
+    - inventory_hostname in groups['monitoring']
+
+# Chỉ mạng quản trị được mở các giao diện Prometheus, Grafana và Alertmanager.
+- name: Allow monitoring web interfaces
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_observability_network }}"
+    port: "{{ item }}"
+    proto: tcp
+    comment: "Giao dien quan tri monitoring"
+  loop:
+    - "3000"
+    - "9090"
+    - "9093"
+  when:
+    - firewall_enabled
+    - inventory_hostname in groups['monitoring']
+
+# Từ chối kết nối vào mặc định; kết nối ra ngoài vẫn được cho phép.
+- name: Set restrictive UFW defaults
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+  when: firewall_enabled
+
+# Bật UFW sau khi tất cả rule cần thiết đã tồn tại.
+- name: Enable UFW firewall
+  community.general.ufw:
+    state: enabled
+    logging: low
+  when: firewall_enabled

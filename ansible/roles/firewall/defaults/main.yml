@@ -1,0 +1,17 @@
+# Cấu hình firewall dùng UFW trên toàn bộ máy trong lab.
+firewall_enabled: true
+firewall_management_network: 10.10.0.0/23
+firewall_ssh_port: 22
+
+# Lấy IP các lớp từ inventory để rule không phải viết lặp ở nhiều nơi.
+firewall_loadbalancer_ip: "{{ hostvars[groups['haproxy'][0]].ansible_host }}"
+firewall_webserver_ip: "{{ hostvars[groups['web'][0]].ansible_host }}"
+firewall_database_ip: "{{ hostvars[groups['database'][0]].ansible_host }}"
+firewall_storage_ip: "{{ hostvars[groups['storage'][0]].ansible_host }}"
+firewall_monitoring_ip: "{{ hostvars[groups['monitoring'][0]].ansible_host }}"
+
+# Prometheus chạy trong Docker nên khi scrape chính monitor, nguồn là bridge này.
+firewall_monitoring_container_network: 172.18.0.0/16
+
+# Chỉ mở giao diện quản trị từ mạng quản trị; node_exporter chỉ nhận từ monitor.
+firewall_observability_network: "{{ firewall_management_network }}"
