@@ -1,41 +1,83 @@
-# Cai dat Nginx
+# Cài đặt Nginx.
 - name: Install Nginx
-  apt: 
+  ansible.builtin.apt:
     name: "{{ nginx_package }}"
     state: present
     update_cache: true
 
-# Tao thu muc mount NFS
+# Tạo thư mục làm mount point cho dữ liệu dùng chung.
 - name: Create Mount Directory
-  file:
+  ansible.builtin.file:
     path: "{{ nfs_mount_directory }}"
     state: directory
     mode: "0755"
 
-# Cài đặt NFS Client
+# Cài đặt client NFS và client MariaDB để kiểm tra luồng phụ thuộc.
 - name: Install NFS Client
-  apt:
-    name: nfs-common
+  ansible.builtin.apt:
+    name:
+      - nfs-common
+      - mariadb-client
+      - python3-pymysql
     state: present
 
+# Kiểm tra NFS Server sẵn sàng trước khi mount.
 - name: Wait for NFS Server
-  wait_for:
+  ansible.builtin.wait_for:
     host: "{{ nfs_server }}"
     port: 2049
     timeout: 30
 
-# Mount thu muc NFS
+# Mount NFSv4 và lưu vào fstab để tự phục hồi sau khi reboot.
 - name: Mount NFS Share
-  mount:
+  ansible.posix.mount:
     src: "{{ nfs_server }}:{{ nfs_remote_directory }}"
     path: "{{ nfs_mount_directory }}"
     fstype: nfs
-    opts: defaults
+    opts: "{{ nfs_mount_options }}"
     state: mounted
 
-# Trien khai cau hinh Nginx
+# Xác nhận mount point thực sự là filesystem NFS, không chỉ là thư mục rỗng.
+- name: Verify NFS mount is active
+  ansible.builtin.command:
+    cmd: "mountpoint -q {{ nfs_mount_directory }}"
+  changed_when: false
+
+# Kiểm tra firewall và đường mạng từ Web Server đến MariaDB.
+- name: Wait for MariaDB TCP port
+  ansible.builtin.wait_for:
+    host: "{{ mariadb_server }}"
+    port: "{{ mariadb_port }}"
+    timeout: 30
+
+# Kiểm tra MariaDB thực sự trả lời; không ghi mật khẩu hoặc thông tin nhạy cảm vào log.
+- name: Verify MariaDB responds to ping
+  ansible.builtin.command:
+    cmd: >-
+      mysqladmin --protocol=tcp --host={{ mariadb_server }}
+      --port={{ mariadb_port }} --connect-timeout=5 ping
+  register: mariadb_ping
+  changed_when: false
+  failed_when:
+    - mariadb_ping.rc != 0
+    - "'alive' not in ((mariadb_ping.stdout ~ mariadb_ping.stderr) | lower)"
+    - "'not allowed' not in ((mariadb_ping.stdout ~ mariadb_ping.stderr) | lower)"
+
+# Khi có secret Vault, kiểm tra thêm khả năng đăng nhập của tài khoản ứng dụng.
+- name: Verify Web Server application login to MariaDB
+  community.mysql.mysql_query:
+    login_host: "{{ mariadb_server }}"
+    login_port: "{{ mariadb_port }}"
+    login_user: "{{ web_mariadb_application_user }}"
+    login_password: "{{ web_mariadb_application_password }}"
+    database: "{{ web_mariadb_application_database }}"
+    query: SELECT 1
+  no_log: true
+  when: web_mariadb_application_password | string | length > 0
+
+# Triển khai cấu hình Nginx có endpoint health check cho HAProxy.
 - name: Deploy Nginx Configuration
-  template:
+  ansible.builtin.template:
     src: nginx.conf.j2
     dest: "{{ nginx_config_file }}"
     owner: root
@@ -43,31 +85,42 @@
     mode: "0644"
   notify: Restart Nginx
 
-# Khoi dong Nginx
+# Khởi động và bật Nginx cùng hệ điều hành.
 - name: Enable Nginx Service
-  service:
+  ansible.builtin.service:
     name: "{{ nginx_service }}"
     enabled: true
     state: started
 
-# Thu thập thông tin service
+# Thu thập thông tin service để hiển thị kết quả triển khai.
 - name: Collect Service Facts
-  service_facts:
+  ansible.builtin.service_facts:
 
-# Thu thap trang thai
+# Thông báo ngắn gọn khi Nginx đang chạy.
 - name: Show Nginx Status
-  debug:  
+  ansible.builtin.debug:
     msg: "Nginx service is running"
   when: ansible_facts.services['nginx.service'].state == "running"
 
-# Kiem tra phien ban
+# Kiểm tra phiên bản Nginx nhưng không đánh dấu playbook là changed.
 - name: Check Nginx Version
-  command: nginx -v
+  ansible.builtin.command: nginx -v
   register: nginx_version
   changed_when: false
   failed_when: false
 
-# Hien thi phien ban
+# Hiển thị phiên bản Nginx.
 - name: Show Nginx Version
-  debug: 
+  ansible.builtin.debug:
     msg: "{{ nginx_version.stderr }}"
+
+# Áp dụng ngay cấu hình mới trước khi kiểm tra endpoint health.
+- name: Apply pending Nginx handler changes
+  ansible.builtin.meta: flush_handlers
+
+# Kiểm tra endpoint nội bộ sau khi Nginx đã khởi động.
+- name: Verify Web health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:80{{ webserver_healthcheck_path }}"
+    status_code: 200
+    return_content: false

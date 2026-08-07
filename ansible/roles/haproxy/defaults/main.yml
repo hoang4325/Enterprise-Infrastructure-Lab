@@ -3,6 +3,9 @@
 #Tên package cần cài
 haproxy_package: haproxy
 
+# OpenSSL được dùng để tạo chứng chỉ tự ký cho môi trường lab.
+haproxy_tls_package: openssl
+
 #Tên service của HAProxy
 haproxy_service: haproxy
 
@@ -10,3 +13,14 @@ haproxy_service: haproxy
 haproxy_config_file: /etc/haproxy/haproxy.cfg
 
 webserver_ip: 10.10.0.220
+
+# Bật HTTPS tại HAProxy. Production nên thay chứng chỉ tự ký bằng chứng chỉ CA thật.
+haproxy_tls_enabled: true
+haproxy_tls_directory: /etc/haproxy/certs
+haproxy_tls_private_key_file: "{{ haproxy_tls_directory }}/lab.key"
+haproxy_tls_csr_file: "{{ haproxy_tls_directory }}/lab.csr"
+haproxy_tls_certificate_file: "{{ haproxy_tls_directory }}/lab.crt"
+haproxy_tls_pem_file: "{{ haproxy_tls_directory }}/haproxy.pem"
+haproxy_tls_common_name: "{{ ansible_host }}"
+haproxy_tls_subject_alt_names:
+  - "IP:{{ ansible_host }}"

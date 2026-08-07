@@ -5,6 +5,11 @@ global
     group haproxy
     daemon
 
+    # Chỉ cho phép TLS hiện đại khi HAProxy nhận kết nối HTTPS.
+{% if haproxy_tls_enabled %}
+    ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
+{% endif %}
+
 defaults
     log global
     mode http
@@ -19,10 +24,38 @@ defaults
 frontend http_front
     bind *:80
     mode http
+{% if haproxy_tls_enabled %}
+    # Ép người dùng chuyển sang kênh mã hóa.
+    http-request redirect scheme https code 301
+{% endif %}
+    # Header bảo vệ cả response redirect từ cổng HTTP.
+    http-response set-header X-Content-Type-Options nosniff
+    http-response set-header X-Frame-Options DENY
+    http-response set-header Referrer-Policy strict-origin-when-cross-origin
     default_backend web_servers
+
+{% if haproxy_tls_enabled %}
+frontend https_front
+    bind *:443 ssl crt {{ haproxy_tls_pem_file }}
+    mode http
+    option forwardfor
+    http-request set-header X-Forwarded-Proto https
+    # Header giúp giảm MIME sniffing, clickjacking và rò rỉ referrer.
+    http-response set-header X-Content-Type-Options nosniff
+    http-response set-header X-Frame-Options DENY
+    http-response set-header Referrer-Policy strict-origin-when-cross-origin
+    http-response set-header Permissions-Policy "geolocation=(), camera=(), microphone=()"
+    http-response set-header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+    http-response set-header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    default_backend web_servers
+{% endif %}
 
 backend web_servers
     mode http
     balance roundrobin
 
+    # Kiểm tra đúng endpoint ứng dụng thay vì chỉ kiểm tra TCP port 80.
+    option httpchk
+    http-check send meth GET uri /healthz ver HTTP/1.1 hdr Host localhost
+    http-check expect status 200
     server web1 {{ webserver_ip }}:80 check

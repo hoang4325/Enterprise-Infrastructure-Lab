@@ -10,8 +10,8 @@ nfs_shared_directory: /srv/nfs/shared
 # File exports
 nfs_exports_file: /etc/exports
 
-# Quyen truy cap mang noi bo
-nfs_allowed_network: 10.10.0.0/23
+# Chỉ Web Server được phép mount dữ liệu NFS.
+nfs_allowed_network: "{{ hostvars[groups['web'][0]].ansible_host }}/32"
 
 # Quyen export
 nfs_export_options: rw,sync,no_subtree_check

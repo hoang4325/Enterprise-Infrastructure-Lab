@@ -1,12 +1,12 @@
-# Cai dat Mariadb server
+# Cài đặt MariaDB Server.
 - name: Install MariaDB Server
-  apt: 
+  ansible.builtin.apt:
     name: "{{ mariadb_package }}"
     state: present
 
-# Trien khai file cau hinh MariaDB
+# Triển khai cấu hình MariaDB.
 - name: Deploy MariaDB Configuration
-  template:
+  ansible.builtin.template:
     src: mariadb.cnf.j2
     dest: "{{ mariadb_config_file }}"
     owner: root
@@ -16,9 +16,36 @@
   notify:
     - Restart MariaDB
 
-# Dam bao DB luon khoi dong cung OS
+# Đảm bảo DB luôn khởi động cùng OS.
 - name: Enable MariaDB service
-  service:
+  ansible.builtin.service:
     name: "{{ mariadb_service }}"
     enabled: true
     state: started
+
+# Cài thư viện Python để Ansible quản lý MariaDB qua socket Unix.
+- name: Install MariaDB Ansible driver
+  ansible.builtin.apt:
+    name: python3-pymysql
+    state: present
+  when: mariadb_application_password | string | length > 0
+
+# Tạo database ứng dụng khi đã cung cấp mật khẩu trong Vault.
+- name: Create application database
+  community.mysql.mysql_db:
+    name: "{{ mariadb_application_database }}"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+  when: mariadb_application_password | string | length > 0
+
+# Cấp quyền tối thiểu cho Web Server, không mở tài khoản ứng dụng cho mọi host.
+- name: Create restricted application database user
+  community.mysql.mysql_user:
+    name: "{{ mariadb_application_user }}"
+    host: "{{ mariadb_application_host }}"
+    password: "{{ mariadb_application_password }}"
+    priv: "{{ mariadb_application_database }}.*:SELECT,INSERT,UPDATE,DELETE"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+  no_log: true
+  when: mariadb_application_password | string | length > 0

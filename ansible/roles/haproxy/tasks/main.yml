@@ -1,24 +1,101 @@
-# Cài đặt HAProxy
+# Cài đặt HAProxy và OpenSSL để HAProxy có thể phục vụ HTTPS.
 - name: Install HAProxy package
-  apt:
-    name: "{{ haproxy_package }}"
+  ansible.builtin.apt:
+    name:
+      - "{{ haproxy_package }}"
+      - "{{ haproxy_tls_package }}"
     state: present
 
-#Sao chep file cau hinh HAProxy len may chu
+# Tạo thư mục chỉ chứa chứng chỉ và khóa riêng của HAProxy.
+- name: Create HAProxy TLS directory
+  ansible.builtin.file:
+    path: "{{ haproxy_tls_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: haproxy_tls_enabled
+
+# Sinh khóa RSA trên máy HAProxy, không đưa khóa riêng vào Git.
+- name: Generate HAProxy TLS private key
+  community.crypto.openssl_privatekey:
+    path: "{{ haproxy_tls_private_key_file }}"
+    type: RSA
+    size: 3072
+    owner: root
+    group: root
+    mode: "0600"
+  when: haproxy_tls_enabled
+
+# Tạo CSR với SAN là địa chỉ IP mà người dùng truy cập trong lab.
+- name: Generate HAProxy TLS certificate request
+  community.crypto.openssl_csr:
+    path: "{{ haproxy_tls_csr_file }}"
+    privatekey_path: "{{ haproxy_tls_private_key_file }}"
+    common_name: "{{ haproxy_tls_common_name }}"
+    subject_alt_name: "{{ haproxy_tls_subject_alt_names }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: haproxy_tls_enabled
+
+# Tạo chứng chỉ tự ký 365 ngày cho môi trường học tập.
+- name: Generate self-signed HAProxy TLS certificate
+  community.crypto.x509_certificate:
+    path: "{{ haproxy_tls_certificate_file }}"
+    privatekey_path: "{{ haproxy_tls_private_key_file }}"
+    csr_path: "{{ haproxy_tls_csr_file }}"
+    provider: selfsigned
+    selfsigned_not_after: "+365d"
+    selfsigned_digest: sha256
+    owner: root
+    group: root
+    mode: "0644"
+  when: haproxy_tls_enabled
+
+# HAProxy cần cert và key nối trong cùng một PEM; slurp giữ nội dung ngoài log.
+- name: Read HAProxy TLS certificate and private key
+  block:
+    - name: Read HAProxy certificate
+      ansible.builtin.slurp:
+        src: "{{ haproxy_tls_certificate_file }}"
+      register: haproxy_tls_certificate_content
+      no_log: true
+
+    - name: Read HAProxy private key
+      ansible.builtin.slurp:
+        src: "{{ haproxy_tls_private_key_file }}"
+      register: haproxy_tls_private_key_content
+      no_log: true
+  when: haproxy_tls_enabled
+
+# Triển khai PEM hoàn chỉnh với quyền chỉ root đọc được khóa riêng.
+- name: Assemble HAProxy TLS PEM file
+  ansible.builtin.copy:
+    content: "{{ haproxy_tls_certificate_content.content | b64decode }}{{ haproxy_tls_private_key_content.content | b64decode }}"
+    dest: "{{ haproxy_tls_pem_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: haproxy_tls_enabled
+  notify:
+    - Restart HAProxy
+
+# Sao chép file cấu hình HAProxy; chỉ restart nếu cấu hình hợp lệ và có thay đổi.
 - name: Deploy HAProxy configuration
-  template:
+  ansible.builtin.template:
     src: haproxy.cfg.j2
     dest: "{{ haproxy_config_file }}"
     owner: root
     group: root
     mode: "0644"
-#Neu file cau hinh co thay doi thi goi Handler de restart dich vu HAProxy
+    validate: "haproxy -c -f %s"
   notify:
     - Restart HAProxy
 
-#Tu dong chay khi bat may
+# Tự động chạy HAProxy cùng hệ điều hành.
 - name: Enable and start HAProxy service
-  service:
+  ansible.builtin.service:
     name: "{{ haproxy_service }}"
     enabled: true
     state: started

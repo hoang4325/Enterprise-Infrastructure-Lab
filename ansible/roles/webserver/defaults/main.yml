@@ -7,6 +7,15 @@ nginx_service: nginx
 # IP NFS server
 nfs_server: 10.10.0.240
 
+# Địa chỉ và cổng MariaDB mà Web Server cần truy cập.
+mariadb_server: 10.10.0.230
+mariadb_port: 3306
+
+# Chỉ bật kiểm tra đăng nhập khi đã khai báo secret ứng dụng trong Vault.
+web_mariadb_application_user: "{{ hostvars[groups['database'][0]].mariadb_application_user | default('webapp') }}"
+web_mariadb_application_database: "{{ hostvars[groups['database'][0]].mariadb_application_database | default('enterprise_app') }}"
+web_mariadb_application_password: "{{ hostvars[groups['database'][0]].mariadb_application_password | default('') }}"
+
 # Thu muc chia se NFS server
 nfs_remote_directory: /srv/nfs/shared
 
@@ -15,3 +24,9 @@ nfs_mount_directory: /var/www/html
 
 # File cau hinh nginx
 nginx_config_file: /etc/nginx/sites-available/default
+
+# Endpoint nội bộ để HAProxy kiểm tra Web Server còn phục vụ hay không.
+webserver_healthcheck_path: /healthz
+
+# Dùng NFSv4 để client chỉ cần kết nối cổng 2049.
+nfs_mount_options: defaults,vers=4

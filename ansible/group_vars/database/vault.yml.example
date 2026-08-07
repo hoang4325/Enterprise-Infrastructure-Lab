@@ -1,0 +1,2 @@
+# Sao chép file này thành vault.yml, điền mật khẩu rồi mã hóa bằng ansible-vault.
+mariadb_application_password: "THAY_BANG_MAT_KHAU_DAI_NGAU_NHIEN"

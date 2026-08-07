@@ -1,4 +1,11 @@
 # Local secrets and Ansible Vault files
 ansible/group_vars/monitoring/vault.yml
 ansible/group_vars/monitoring/*.secret.yml
+ansible/group_vars/database/vault.yml
+ansible/group_vars/database/*.secret.yml
 *.vault-pass
+
+# Chứng chỉ và khóa riêng sinh trên máy đích hoặc dùng khi triển khai HTTPS.
+*.pem
+*.key
+*.csr
