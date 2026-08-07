@@ -42,10 +42,13 @@
 - name: Create restricted application database user
   community.mysql.mysql_user:
     name: "{{ mariadb_application_user }}"
-    host: "{{ mariadb_application_host }}"
+    host: "{{ item }}"
     password: "{{ mariadb_application_password }}"
     priv: "{{ mariadb_application_database }}.*:SELECT,INSERT,UPDATE,DELETE"
     state: present
     login_unix_socket: /run/mysqld/mysqld.sock
+  loop: "{{ mariadb_application_hosts }}"
+  loop_control:
+    label: "{{ item }}"
   no_log: true
   when: mariadb_application_password | string | length > 0
