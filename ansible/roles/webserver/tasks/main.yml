@@ -70,7 +70,7 @@
     login_port: "{{ mariadb_port }}"
     login_user: "{{ web_mariadb_application_user }}"
     login_password: "{{ web_mariadb_application_password }}"
-    database: "{{ web_mariadb_application_database }}"
+    login_db: "{{ web_mariadb_application_database }}"
     query: SELECT 1
   no_log: true
   when: web_mariadb_application_password | string | length > 0
