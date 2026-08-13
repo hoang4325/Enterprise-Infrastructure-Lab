@@ -19,3 +19,6 @@ backup_schedule: "*-*-* 02:00:00"
 # Tên database và thư mục tạm dùng cho restore validation.
 backup_restore_database_name: enterprise_app_restore_test
 backup_restore_directory: /var/lib/backup-restore
+
+# Database hiện tại có thể chưa có bảng khi mới dựng lab; đặt thành 1 khi ứng dụng đã có schema.
+backup_restore_minimum_tables: 0
