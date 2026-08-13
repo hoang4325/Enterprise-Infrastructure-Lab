@@ -8,6 +8,7 @@ Các runbook dưới đây dùng cho bốn nhóm sự cố thường gặp trong
 - [Lỗi NFS](nfs-failure.md)
 - [Backup và Restore](backup-restore.md)
 - [Keepalived/VRRP](keepalived.md)
+- [Các lỗi đã gặp và cách xử lý](troubleshooting-history.md)
 
 ## Nguyên tắc xử lý chung
 

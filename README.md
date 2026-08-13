@@ -269,6 +269,7 @@ unreachable=0
 - [Mất kết nối giữa các lớp](docs/runbooks/network-unreachable.md)
 - [Lỗi NFS](docs/runbooks/nfs-failure.md)
 - [Backup và Restore](docs/runbooks/backup-restore.md)
+- [Các lỗi đã gặp và cách xử lý](docs/runbooks/troubleshooting-history.md)
 
 ## Hạn chế hiện tại và hướng phát triển
 
