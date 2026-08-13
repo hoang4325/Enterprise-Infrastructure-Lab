@@ -1,0 +1,17 @@
+---
+# Bật hoặc tắt Keepalived trên cụm HAProxy.
+keepalived_enabled: true
+
+# VIP là địa chỉ người dùng truy cập thay cho IP vật lý của từng HAProxy.
+keepalived_virtual_ip: 10.10.0.212
+keepalived_virtual_router_id: 51
+# Mật khẩu phải được khai báo trong Vault; Keepalived chỉ nhận tối đa 8 ký tự.
+keepalived_auth_password: ""
+
+# Giao diện mạng dùng cho VRRP; để trống sẽ tự lấy giao diện có ansible_host.
+keepalived_interface: "{{ ansible_default_ipv4.interface }}"
+
+# Kiểm tra HAProxy trước khi giữ VIP. Khi HAProxy lỗi, VIP được nhường cho node còn lại.
+keepalived_check_script: /usr/local/sbin/check-haproxy.sh
+keepalived_check_interval: 2
+keepalived_check_weight: -20

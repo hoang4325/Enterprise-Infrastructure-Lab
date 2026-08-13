@@ -7,6 +7,7 @@ Các runbook dưới đây dùng cho bốn nhóm sự cố thường gặp trong
 - [Mất kết nối giữa các lớp](network-unreachable.md)
 - [Lỗi NFS](nfs-failure.md)
 - [Backup và Restore](backup-restore.md)
+- [Keepalived/VRRP](keepalived.md)
 
 ## Nguyên tắc xử lý chung
 

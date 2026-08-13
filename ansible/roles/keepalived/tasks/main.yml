@@ -1,0 +1,53 @@
+---
+# Keepalived chỉ có ý nghĩa khi cụm có ít nhất hai HAProxy.
+- name: Verify HAProxy cluster has two nodes
+  ansible.builtin.assert:
+    that:
+      - groups['haproxy'] | length >= 2
+      - keepalived_auth_password | length >= 1
+      - keepalived_auth_password | length <= 8
+    fail_msg: "Cần ít nhất 2 máy trong group haproxy để triển khai VRRP."
+    quiet: true
+  when: keepalived_enabled
+
+# Cài daemon quản lý VIP và giao thức VRRP.
+- name: Install Keepalived
+  ansible.builtin.apt:
+    name: keepalived
+    state: present
+  when: keepalived_enabled
+
+# Script kiểm tra HAProxy còn hoạt động trước khi node giữ VIP.
+- name: Deploy HAProxy health check for Keepalived
+  ansible.builtin.copy:
+    dest: "{{ keepalived_check_script }}"
+    owner: root
+    group: root
+    mode: "0750"
+    content: |
+      #!/usr/bin/env bash
+      # Trả về mã lỗi để Keepalived hạ ưu tiên khi HAProxy không chạy.
+      set -Eeuo pipefail
+      systemctl is-active --quiet haproxy
+      haproxy -c -f /etc/haproxy/haproxy.cfg >/dev/null
+  when: keepalived_enabled
+
+# Tạo cấu hình unicast VRRP phù hợp với mạng lab VMware.
+- name: Deploy Keepalived configuration
+  ansible.builtin.template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode: "0600"
+    validate: "keepalived --config-test --use-file=%s"
+  notify: Restart Keepalived
+  when: keepalived_enabled
+
+# Bật Keepalived cùng hệ điều hành.
+- name: Enable and start Keepalived
+  ansible.builtin.systemd_service:
+    name: keepalived
+    enabled: true
+    state: started
+  when: keepalived_enabled

@@ -1,0 +1,7 @@
+---
+# Triển khai Keepalived để tạo VIP dự phòng cho cụm HAProxy.
+- name: Configure HAProxy VRRP cluster
+  hosts: haproxy
+  become: true
+  roles:
+    - keepalived

@@ -1,0 +1,6 @@
+---
+# Khởi động lại Keepalived sau khi cấu hình thay đổi.
+- name: Restart Keepalived
+  ansible.builtin.systemd_service:
+    name: keepalived
+    state: restarted
