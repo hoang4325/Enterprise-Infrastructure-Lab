@@ -34,10 +34,13 @@
 - name: Allow HAProxy to access Web Server
   community.general.ufw:
     rule: allow
-    from_ip: "{{ firewall_loadbalancer_ip }}"
+    from_ip: "{{ item }}"
     port: "80"
     proto: tcp
     comment: "HAProxy den Web Server"
+  loop: "{{ firewall_loadbalancer_ips }}"
+  loop_control:
+    label: "{{ item }}"
   when:
     - firewall_enabled
     - inventory_hostname in groups['web']
