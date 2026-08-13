@@ -19,6 +19,7 @@
 
 - name: Configure Todo application
   hosts: web
+  serial: 1
   become: true
   roles:
     - todo_app

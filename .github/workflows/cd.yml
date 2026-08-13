@@ -1,0 +1,59 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: Rolling deploy to lab
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, linux, lab]
+    env:
+      ANSIBLE_LOCAL_TEMP: ${{ runner.temp }}/ansible-tmp
+      ANSIBLE_PRIVATE_KEY_FILE: ${{ runner.temp }}/lab-key
+      TODO_APP_REGISTRY_USERNAME: ${{ github.actor }}
+      TODO_APP_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout deployed revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Prepare Ansible credentials
+        shell: bash
+        env:
+          LAB_SSH_PRIVATE_KEY: ${{ secrets.LAB_SSH_PRIVATE_KEY }}
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d "$ANSIBLE_LOCAL_TEMP"
+          printf '%s\n' "$LAB_SSH_PRIVATE_KEY" > "$ANSIBLE_PRIVATE_KEY_FILE"
+          chmod 600 "$ANSIBLE_PRIVATE_KEY_FILE"
+          printf '%s\n' "$ANSIBLE_VAULT_PASSWORD" > "$RUNNER_TEMP/vault-password"
+          chmod 600 "$RUNNER_TEMP/vault-password"
+
+      - name: Deploy immutable image with Ansible
+        shell: bash
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -Eeuo pipefail
+          IMAGE_REF="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/enterprise-todo:${DEPLOY_SHA}"
+          ansible-playbook -i ansible/inventory.ini ansible/playbooks/todo_app.yml \
+            --vault-password-file "$RUNNER_TEMP/vault-password" \
+            -e "todo_app_image=${IMAGE_REF}" \
+            -e "todo_app_build_image=false" \
+            -e "todo_app_registry_enabled=true"
+
+      - name: Verify application through VIP
+        run: curl --fail --silent --show-error --insecure https://10.10.0.212/readyz

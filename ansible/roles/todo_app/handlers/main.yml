@@ -4,4 +4,5 @@
   community.docker.docker_compose_v2:
     project_src: "{{ todo_app_directory }}"
     state: present
-    recreate: always
+    build: "{{ 'always' if todo_app_build_image else 'never' }}"
+    pull: "{{ 'always' if todo_app_registry_enabled else 'never' }}"

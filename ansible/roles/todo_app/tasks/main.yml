@@ -7,6 +7,29 @@
     fail_msg: "Cần khai báo mariadb_application_password trong database Vault."
   when: todo_app_enabled
 
+# CD dùng image đã build và scan từ Registry, nên phải có thông tin đăng nhập.
+- name: Verify Todo registry credentials
+  ansible.builtin.assert:
+    that:
+      - todo_app_registry_username | string | length > 0
+      - todo_app_registry_password | string | length > 0
+    fail_msg: "CD qua Registry cần TODO_APP_REGISTRY_USERNAME và TODO_APP_REGISTRY_PASSWORD."
+  when:
+    - todo_app_enabled
+    - todo_app_registry_enabled
+
+# Đăng nhập GHCR trên từng Web Server để pull package private mà không ghi secret ra log.
+- name: Login to Todo container registry
+  community.docker.docker_login:
+    registry_url: "{{ todo_app_registry_server }}"
+    username: "{{ todo_app_registry_username }}"
+    password: "{{ todo_app_registry_password }}"
+    reauthorize: true
+  no_log: true
+  when:
+    - todo_app_enabled
+    - todo_app_registry_enabled
+
 # Tạo thư mục chứa source build và file compose, không chứa secret trong Git.
 - name: Create Todo application directory
   ansible.builtin.file:
@@ -27,7 +50,9 @@
     mode: "0644"
     directory_mode: "0755"
   notify: Restart Todo application
-  when: todo_app_enabled
+  when:
+    - todo_app_enabled
+    - todo_app_build_image
 
 # File env chứa mật khẩu chỉ root đọc được và không nằm trong repository.
 - name: Deploy Todo application environment
@@ -67,7 +92,8 @@
   community.docker.docker_compose_v2:
     project_src: "{{ todo_app_directory }}"
     state: present
-    build: always
+    build: "{{ 'always' if todo_app_build_image else 'never' }}"
+    pull: "{{ 'always' if todo_app_registry_enabled else 'never' }}"
   register: todo_compose_result
   when: todo_app_enabled
 

@@ -1,9 +1,14 @@
 services:
   todo-app:
-    # Image được build từ source đã được Ansible triển khai tại app/.
+{% if todo_app_build_image %}
+    # Chế độ local build dùng source đã được Ansible triển khai tại app/.
     build:
       context: ./app
+{% endif %}
     image: {{ todo_app_image }}
+{% if todo_app_registry_enabled %}
+    pull_policy: always
+{% endif %}
     env_file:
       - .env
     ports:

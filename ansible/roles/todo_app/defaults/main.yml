@@ -6,6 +6,13 @@ todo_app_directory: /opt/enterprise-todo
 todo_app_image: enterprise-todo:0.1.0
 todo_app_port: 8080
 
+# Chế độ mặc định giữ tương thích với triển khai thủ công hiện tại.
+todo_app_build_image: true
+todo_app_registry_enabled: false
+todo_app_registry_server: ghcr.io
+todo_app_registry_username: "{{ lookup('ansible.builtin.env', 'TODO_APP_REGISTRY_USERNAME') }}"
+todo_app_registry_password: "{{ lookup('ansible.builtin.env', 'TODO_APP_REGISTRY_PASSWORD') }}"
+
 # Kết nối MariaDB lấy mật khẩu từ Vault của group database.
 todo_app_database_url: "jdbc:mariadb://10.10.0.230:3306/enterprise_app"
 todo_app_database_user: "{{ hostvars[groups['database'][0]].mariadb_application_user | default('webapp') }}"
