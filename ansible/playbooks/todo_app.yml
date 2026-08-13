@@ -1,0 +1,24 @@
+---
+# Triển khai Todo Spring Boot lên hai Web Server.
+- name: Prepare Todo database schema
+  hosts: database
+  become: true
+  tasks:
+    # Tạo schema cơ bản bằng quyền socket quản trị trước khi app khởi động.
+    - name: Create Todo table
+      community.mysql.mysql_query:
+        login_unix_socket: /run/mysqld/mysqld.sock
+        query: |
+          CREATE TABLE IF NOT EXISTS todos (
+            id BIGINT NOT NULL AUTO_INCREMENT,
+            title VARCHAR(255) NOT NULL,
+            completed BOOLEAN NOT NULL DEFAULT FALSE,
+            PRIMARY KEY (id)
+          ) ENGINE=InnoDB;
+      when: mariadb_application_password | string | length > 0
+
+- name: Configure Todo application
+  hosts: web
+  become: true
+  roles:
+    - todo_app

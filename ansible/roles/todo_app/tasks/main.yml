@@ -1,0 +1,85 @@
+---
+# Không triển khai ứng dụng nếu chưa có mật khẩu database trong Vault.
+- name: Verify Todo database secret exists
+  ansible.builtin.assert:
+    that:
+      - todo_app_database_password | string | length > 0
+    fail_msg: "Cần khai báo mariadb_application_password trong database Vault."
+  when: todo_app_enabled
+
+# Tạo thư mục chứa source build và file compose, không chứa secret trong Git.
+- name: Create Todo application directory
+  ansible.builtin.file:
+    path: "{{ todo_app_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: todo_app_enabled
+
+# Chép mã nguồn ứng dụng sang Web Server để Docker build image tại chỗ.
+- name: Deploy Todo application source
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app/"
+    dest: "{{ todo_app_directory }}/app/"
+    owner: root
+    group: root
+    mode: "0644"
+    directory_mode: "0755"
+  notify: Restart Todo application
+  when: todo_app_enabled
+
+# File env chứa mật khẩu chỉ root đọc được và không nằm trong repository.
+- name: Deploy Todo application environment
+  ansible.builtin.template:
+    src: todo.env.j2
+    dest: "{{ todo_app_directory }}/.env"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart Todo application
+  when: todo_app_enabled
+
+# Compose build image và chạy container ở localhost để chỉ Nginx được truy cập.
+- name: Deploy Todo Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ todo_app_directory }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Todo application
+  when: todo_app_enabled
+
+# Tạo thư mục upload trên NFS trước khi container khởi động.
+- name: Create shared Todo upload directory
+  ansible.builtin.file:
+    path: "{{ todo_app_upload_directory }}"
+    state: directory
+    owner: nobody
+    group: nogroup
+    mode: "0775"
+  when: todo_app_enabled
+
+# Build và khởi động app; lần chạy sau không recreate nếu source không đổi.
+- name: Start Todo application
+  community.docker.docker_compose_v2:
+    project_src: "{{ todo_app_directory }}"
+    state: present
+    build: always
+  register: todo_compose_result
+  when: todo_app_enabled
+
+# Kiểm tra readiness của app sau khi container đã chạy.
+- name: Verify Todo application readiness
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ todo_app_port }}/actuator/health/readiness"
+    status_code: 200
+    return_content: false
+  register: todo_readiness
+  retries: 12
+  delay: 5
+  until: todo_readiness.status == 200
+  changed_when: false
+  when: todo_app_enabled

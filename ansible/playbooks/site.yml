@@ -12,6 +12,8 @@
 
 - import_playbook: webserver.yml
 
+- import_playbook: todo_app.yml
+
 - import_playbook: haproxy.yml
 
 - import_playbook: firewall.yml

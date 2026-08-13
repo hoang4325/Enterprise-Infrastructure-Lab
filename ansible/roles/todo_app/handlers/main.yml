@@ -1,0 +1,7 @@
+---
+# Khởi động lại container khi image hoặc cấu hình ứng dụng thay đổi.
+- name: Restart Todo application
+  community.docker.docker_compose_v2:
+    project_src: "{{ todo_app_directory }}"
+    state: present
+    recreate: always

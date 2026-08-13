@@ -1,0 +1,20 @@
+services:
+  todo-app:
+    # Image được build từ source đã được Ansible triển khai tại app/.
+    build:
+      context: ./app
+    image: {{ todo_app_image }}
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:{{ todo_app_port }}:8080"
+    volumes:
+      - "{{ todo_app_upload_directory }}:/data/uploads"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

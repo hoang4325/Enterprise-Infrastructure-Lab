@@ -1,0 +1,15 @@
+---
+# Tên và thư mục triển khai ứng dụng Todo trên từng Web Server.
+todo_app_enabled: true
+todo_app_name: enterprise-todo
+todo_app_directory: /opt/enterprise-todo
+todo_app_image: enterprise-todo:0.1.0
+todo_app_port: 8080
+
+# Kết nối MariaDB lấy mật khẩu từ Vault của group database.
+todo_app_database_url: "jdbc:mariadb://10.10.0.230:3306/enterprise_app"
+todo_app_database_user: "{{ hostvars[groups['database'][0]].mariadb_application_user | default('webapp') }}"
+todo_app_database_password: "{{ hostvars[groups['database'][0]].mariadb_application_password | default('') }}"
+
+# Thư mục upload dùng NFS để hai Web Server nhìn thấy cùng dữ liệu.
+todo_app_upload_directory: /var/www/html/uploads

@@ -12,6 +12,32 @@ server {
         return 200 "ok\n";
     }
 
+    # Proxy giao diện Todo và API vào container Spring Boot ở localhost.
+    location /todo/ {
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Chuẩn hóa URL để giao diện Todo luôn có dấu slash cuối.
+    location = /todo {
+        return 301 /todo/;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Readiness phản ánh cả ứng dụng và MariaDB để vận hành dễ chẩn đoán.
+    location = /readyz {
+        proxy_pass http://127.0.0.1:8080/actuator/health/readiness;
+        proxy_set_header Host $host;
+    }
+
     location / {
         try_files $uri $uri/ =404;
     }

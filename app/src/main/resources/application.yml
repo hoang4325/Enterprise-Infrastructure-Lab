@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: enterprise-todo-app
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mariadb://10.10.0.230:3306/enterprise_app}
+    username: ${SPRING_DATASOURCE_USERNAME:webapp}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate:
+      # Schema do Ansible tạo trước; user ứng dụng không cần quyền DDL.
+      ddl-auto: validate
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+server:
+  port: 8080
