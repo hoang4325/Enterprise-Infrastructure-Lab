@@ -20,6 +20,7 @@ Lab đã hoàn thiện luồng dịch vụ chính và đã được kiểm chứ
 - Dashboard Grafana được tự động provision.
 - Playbook chạy lại đạt `changed=0` trên toàn bộ hạ tầng.
 - Có runbook cho service, disk, network và NFS.
+- Có role backup cho NFS/MariaDB và restore validation an toàn.
 
 ## Kiến trúc
 
@@ -267,6 +268,7 @@ unreachable=0
 - [Filesystem đầy](docs/runbooks/disk-full.md)
 - [Mất kết nối giữa các lớp](docs/runbooks/network-unreachable.md)
 - [Lỗi NFS](docs/runbooks/nfs-failure.md)
+- [Backup và Restore](docs/runbooks/backup-restore.md)
 
 ## Hạn chế hiện tại và hướng phát triển
 
@@ -275,13 +277,13 @@ Các thành phần sau chưa được triển khai:
 - HAProxy hiện vẫn là một điểm lỗi duy nhất; chưa có Keepalived/VRRP.
 - MariaDB chưa có replication hoặc Galera.
 - NFS chưa có storage redundancy.
-- Chưa có quy trình backup/restore tự động cho MariaDB và NFS.
+- Backup NFS đã triển khai; backup/restore MariaDB cần chạy validation lần đầu.
 - Chưa thực hiện bài kiểm thử RTO/RPO chính thức.
 - Chưa tự động tạo VM VMware bằng Terraform hoặc Ansible.
 
 Thứ tự phát triển tiếp theo:
 
-1. Xây dựng backup và kiểm thử restore MariaDB/NFS.
+1. Hoàn tất chạy backup và restore validation MariaDB.
 2. Thêm Keepalived cho HAProxy.
 3. Triển khai MariaDB replication hoặc Galera.
 4. Tự động hóa provisioning VMware.

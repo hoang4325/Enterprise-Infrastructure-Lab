@@ -6,6 +6,7 @@ Các runbook dưới đây dùng cho bốn nhóm sự cố thường gặp trong
 - [Filesystem đầy](disk-full.md)
 - [Mất kết nối giữa các lớp](network-unreachable.md)
 - [Lỗi NFS](nfs-failure.md)
+- [Backup và Restore](backup-restore.md)
 
 ## Nguyên tắc xử lý chung
 
