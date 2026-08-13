@@ -35,7 +35,52 @@
     enabled: true
     state: started
 
+# Tạo điểm mount cho virtual disk backup riêng, không dùng chung với NFS data.
+- name: Create backup mount directory
+  ansible.builtin.file:
+    path: "{{ backup_mount_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: backup_disk_enabled
 
+# Format disk backup lần đầu; module không format lại disk đã có filesystem.
+- name: Create filesystem on backup disk
+  community.general.filesystem:
+    dev: "{{ backup_disk_device }}"
+    fstype: "{{ backup_filesystem }}"
+    opts: "-L backup"
+  when: backup_disk_enabled
+
+# Mount disk backup và ghi cấu hình vào fstab để tự mount sau reboot.
+- name: Mount backup disk
+  ansible.posix.mount:
+    src: "LABEL=backup"
+    path: "{{ backup_mount_directory }}"
+    fstype: "{{ backup_filesystem }}"
+    opts: "{{ backup_mount_options }}"
+    state: mounted
+  when: backup_disk_enabled
+
+# Kiểm tra filesystem backup thực sự ghi được dữ liệu.
+- name: Verify backup disk is writable
+  ansible.builtin.file:
+    path: "{{ backup_mount_directory }}/.ansible-write-test"
+    state: touch
+    owner: root
+    group: root
+    mode: "0600"
+  register: backup_write_test
+  changed_when: false
+  when: backup_disk_enabled
+
+# Xóa file kiểm tra để thư mục backup chỉ chứa dữ liệu thật.
+- name: Remove backup disk write test
+  ansible.builtin.file:
+    path: "{{ backup_mount_directory }}/.ansible-write-test"
+    state: absent
+  when: backup_disk_enabled
 
 
 

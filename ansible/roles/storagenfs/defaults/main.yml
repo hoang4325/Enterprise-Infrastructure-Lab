@@ -15,3 +15,10 @@ nfs_allowed_clients: "{{ groups['web'] | map('extract', hostvars, 'ansible_host'
 
 # Quyen export
 nfs_export_options: rw,sync,no_subtree_check
+
+# Virtual disk riêng dùng để lưu backup; chỉ format khi thiết bị chưa có filesystem.
+backup_disk_enabled: true
+backup_disk_device: /dev/sdb
+backup_mount_directory: /srv/backup
+backup_filesystem: ext4
+backup_mount_options: defaults,nofail
