@@ -9,3 +9,6 @@ ansible/group_vars/database/*.secret.yml
 *.pem
 *.key
 *.csr
+
+# Maven build output không commit vào repository.
+app/target/
