@@ -54,9 +54,9 @@ backend web_servers
     mode http
     balance roundrobin
 
-    # Kiểm tra đúng endpoint ứng dụng thay vì chỉ kiểm tra TCP port 80.
+    # Kiểm tra readiness của Spring Boot, MariaDB và Nginx trước khi nhận request.
     option httpchk
-    http-check send meth GET uri /healthz ver HTTP/1.1 hdr Host localhost
+    http-check send meth GET uri /readyz ver HTTP/1.1 hdr Host localhost
     http-check expect status 200
 {% for web_host in groups['web'] | sort %}
     server {{ web_host }} {{ hostvars[web_host].ansible_host | default(web_host) }}:80 check
