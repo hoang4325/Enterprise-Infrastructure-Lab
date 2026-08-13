@@ -270,6 +270,7 @@ unreachable=0
 - [Lỗi NFS](docs/runbooks/nfs-failure.md)
 - [Backup và Restore](docs/runbooks/backup-restore.md)
 - [Các lỗi đã gặp và cách xử lý](docs/runbooks/troubleshooting-history.md)
+- [Kiểm thử nghiệm thu toàn bộ](docs/runbooks/acceptance-test.md)
 
 ## Hạn chế hiện tại và hướng phát triển
 

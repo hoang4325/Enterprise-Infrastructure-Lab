@@ -9,6 +9,7 @@ Các runbook dưới đây dùng cho bốn nhóm sự cố thường gặp trong
 - [Backup và Restore](backup-restore.md)
 - [Keepalived/VRRP](keepalived.md)
 - [Các lỗi đã gặp và cách xử lý](troubleshooting-history.md)
+- [Kiểm thử nghiệm thu toàn bộ](acceptance-test.md)
 
 ## Nguyên tắc xử lý chung
 
