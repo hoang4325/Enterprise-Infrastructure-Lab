@@ -6,7 +6,8 @@ firewall_ssh_port: 22
 # Lấy IP các lớp từ inventory để rule không phải viết lặp ở nhiều nơi.
 firewall_loadbalancer_ip: "{{ hostvars[groups['haproxy'][0]].ansible_host }}"
 firewall_webserver_ips: "{{ groups['web'] | map('extract', hostvars, 'ansible_host') | list }}"
-firewall_database_ip: "{{ hostvars[groups['database'][0]].ansible_host }}"
+# IP database cố định để chạy firewall riêng từng máy không cần giải mã Vault.
+firewall_database_ip: 10.10.0.230
 firewall_storage_ip: "{{ hostvars[groups['storage'][0]].ansible_host }}"
 # IP monitor được khai báo tĩnh để các playbook firewall không cần giải mã Vault.
 firewall_monitoring_ip: 10.10.0.250
