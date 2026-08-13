@@ -1,0 +1,21 @@
+# Bật/tắt role backup, mặc định bật trong môi trường lab.
+backup_enabled: true
+
+# Đường dẫn backup trên storage và mount point phía MariaDB.
+backup_storage_directory: /srv/backup
+backup_database_mount_directory: /mnt/backup
+backup_storage_server: 10.10.0.240
+
+# Dữ liệu cần bảo vệ.
+backup_nfs_source_directory: /srv/nfs/shared
+backup_database_name: enterprise_app
+
+# Giữ backup trong số ngày này; file cũ hơn sẽ được dọn sau khi backup thành công.
+backup_retention_days: 14
+
+# Chạy mỗi ngày lúc 02:00 theo timezone của máy chủ.
+backup_schedule: "*-*-* 02:00:00"
+
+# Tên database và thư mục tạm dùng cho restore validation.
+backup_restore_database_name: enterprise_app_restore_test
+backup_restore_directory: /var/lib/backup-restore

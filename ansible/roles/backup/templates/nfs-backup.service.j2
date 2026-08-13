@@ -1,0 +1,9 @@
+[Unit]
+Description=Backup NFS shared data
+After=local-fs.target nfs-server.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/backup-nfs.sh
+User=root
+NoNewPrivileges=true

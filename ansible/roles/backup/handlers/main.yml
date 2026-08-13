@@ -1,0 +1,5 @@
+---
+# Nạp lại systemd sau khi unit hoặc timer thay đổi.
+- name: Reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true

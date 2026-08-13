@@ -1,0 +1,29 @@
+---
+# Chạy kiểm thử restore độc lập, không thay đổi dữ liệu production.
+- name: Validate MariaDB backup restore
+  hosts: database
+  become: true
+  tasks:
+    # Script tự kiểm tra checksum, restore vào DB tạm và tự xóa DB tạm.
+    - name: Run MariaDB restore validation
+      ansible.builtin.command: /usr/local/sbin/validate-mariadb-restore.sh
+      register: mariadb_restore_result
+      changed_when: false
+
+    - name: Show MariaDB restore result
+      ansible.builtin.debug:
+        var: mariadb_restore_result.stdout
+
+- name: Validate NFS backup restore
+  hosts: storage
+  become: true
+  tasks:
+    # Script giải nén vào thư mục tạm rồi tự dọn sau khi kiểm tra xong.
+    - name: Run NFS restore validation
+      ansible.builtin.command: /usr/local/sbin/validate-nfs-restore.sh
+      register: nfs_restore_result
+      changed_when: false
+
+    - name: Show NFS restore result
+      ansible.builtin.debug:
+        var: nfs_restore_result.stdout

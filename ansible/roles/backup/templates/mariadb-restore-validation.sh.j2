@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Restore vào database tạm để xác minh backup, không ghi đè database thật.
+set -Eeuo pipefail
+
+readonly BACKUP_DIR="{{ backup_database_mount_directory }}/mariadb"
+readonly SOURCE_DATABASE="{{ backup_database_name }}"
+readonly TEST_DATABASE="{{ backup_restore_database_name }}"
+readonly LATEST_DUMP="$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "${SOURCE_DATABASE}-*.sql.gz" -printf '%T@ %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
+
+test -n "$LATEST_DUMP"
+test -s "$LATEST_DUMP"
+sha256sum --check "${LATEST_DUMP}.sha256"
+
+cleanup() {
+  mariadb --protocol=socket -NBe "DROP DATABASE IF EXISTS \`$TEST_DATABASE\`;" || true
+}
+trap cleanup EXIT
+
+mariadb --protocol=socket -NBe "DROP DATABASE IF EXISTS \`$TEST_DATABASE\`; CREATE DATABASE \`$TEST_DATABASE\`;"
+gzip -dc "$LATEST_DUMP" | mariadb --protocol=socket "$TEST_DATABASE"
+tables="$(mariadb --protocol=socket -NBe "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$TEST_DATABASE';")"
+test "$tables" -gt 0
+echo "Restore validation thành công: ${LATEST_DUMP}; số bảng=${tables}"

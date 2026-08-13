@@ -1,0 +1,6 @@
+# Triển khai backup cho NFS Storage và MariaDB.
+- name: Configure backup services
+  hosts: storage:database
+  become: true
+  roles:
+    - backup

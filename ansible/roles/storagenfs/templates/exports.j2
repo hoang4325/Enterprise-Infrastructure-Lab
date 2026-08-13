@@ -1,3 +1,6 @@
 {% for client_ip in nfs_allowed_clients %}
 {{ nfs_shared_directory }} {{ client_ip }}/32({{ nfs_export_options }})
 {% endfor %}
+
+# Chỉ MariaDB được ghi dump vào disk backup riêng.
+{{ backup_mount_directory }} {{ backup_allowed_client }}/32({{ backup_export_options }})

@@ -40,8 +40,9 @@
   ansible.builtin.file:
     path: "{{ backup_mount_directory }}"
     state: directory
-    owner: root
-    group: root
+    # root_squash ánh xạ root của MariaDB thành nobody khi ghi qua NFS.
+    owner: nobody
+    group: nogroup
     mode: "0750"
   when: backup_disk_enabled
 
@@ -81,6 +82,4 @@
     path: "{{ backup_mount_directory }}/.ansible-write-test"
     state: absent
   when: backup_disk_enabled
-
-
 

@@ -22,3 +22,7 @@ backup_disk_device: /dev/sdb
 backup_mount_directory: /srv/backup
 backup_filesystem: ext4
 backup_mount_options: defaults,nofail
+
+# Export backup chỉ cho MariaDB để database có thể ghi dump vào disk riêng.
+backup_allowed_client: 10.10.0.230
+backup_export_options: rw,sync,no_subtree_check,root_squash

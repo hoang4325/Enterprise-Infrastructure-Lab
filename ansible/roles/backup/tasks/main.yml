@@ -1,0 +1,143 @@
+---
+# Cài công cụ tạo archive và checksum trên Storage.
+- name: Install backup packages on Storage
+  ansible.builtin.apt:
+    name:
+      - rsync
+      - gzip
+      - tar
+    state: present
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['storage']
+
+# Cài client NFS và MariaDB dump trên máy Database.
+- name: Install backup packages on MariaDB
+  ansible.builtin.apt:
+    name:
+      - nfs-common
+      - mariadb-client
+      - gzip
+    state: present
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['database']
+
+# Tạo các thư mục phân loại để dễ tìm backup và log.
+- name: Create backup directories on Storage
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    # MariaDB ghi qua NFS với root_squash nên thư mục phải thuộc nobody.
+    owner: nobody
+    group: nogroup
+    mode: "0750"
+  loop:
+    - "{{ backup_storage_directory }}/nfs"
+    - "{{ backup_storage_directory }}/mariadb"
+    - "{{ backup_storage_directory }}/logs"
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['storage']
+
+# Mount disk backup qua NFSv4 để MariaDB ghi dump vào /dev/sdb trên Storage.
+- name: Mount backup storage on MariaDB
+  ansible.posix.mount:
+    src: "{{ backup_storage_server }}:{{ backup_storage_directory }}"
+    path: "{{ backup_database_mount_directory }}"
+    fstype: nfs
+    opts: defaults,vers=4,nofail
+    state: mounted
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['database']
+
+# Xác nhận MariaDB đang nhìn thấy NFS backup mount.
+- name: Verify database backup mount
+  ansible.builtin.command:
+    cmd: "mountpoint -q {{ backup_database_mount_directory }}"
+  changed_when: false
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['database']
+
+# Triển khai script backup và restore validation với quyền root.
+- name: Deploy backup scripts on Storage
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - { src: nfs-backup.sh.j2, dest: /usr/local/sbin/backup-nfs.sh }
+    - { src: nfs-restore-validation.sh.j2, dest: /usr/local/sbin/validate-nfs-restore.sh }
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['storage']
+
+- name: Deploy backup scripts on MariaDB
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - { src: mariadb-backup.sh.j2, dest: /usr/local/sbin/backup-mariadb.sh }
+    - { src: mariadb-restore-validation.sh.j2, dest: /usr/local/sbin/validate-mariadb-restore.sh }
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['database']
+
+# Tạo systemd service và timer để backup có lịch, log và trạng thái rõ ràng.
+- name: Deploy backup systemd units on Storage
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/etc/systemd/system/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - { src: nfs-backup.service.j2, dest: backup-nfs.service }
+    - { src: nfs-backup.timer.j2, dest: backup-nfs.timer }
+  notify: Reload systemd
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['storage']
+
+- name: Deploy backup systemd units on MariaDB
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/etc/systemd/system/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - { src: mariadb-backup.service.j2, dest: backup-mariadb.service }
+    - { src: mariadb-backup.timer.j2, dest: backup-mariadb.timer }
+  notify: Reload systemd
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['database']
+
+# Bật timer nhưng để việc chạy backup đầu tiên do người vận hành kiểm soát.
+- name: Enable NFS backup timer
+  ansible.builtin.systemd_service:
+    name: backup-nfs.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['storage']
+
+- name: Enable MariaDB backup timer
+  ansible.builtin.systemd_service:
+    name: backup-mariadb.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when:
+    - backup_enabled
+    - inventory_hostname in groups['database']

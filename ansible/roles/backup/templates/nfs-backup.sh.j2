@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Backup dữ liệu NFS thành archive nén và tạo checksum để kiểm tra toàn vẹn.
+set -Eeuo pipefail
+
+readonly SOURCE_DIR="{{ backup_nfs_source_directory }}"
+readonly BACKUP_DIR="{{ backup_storage_directory }}/nfs"
+readonly LOG_FILE="{{ backup_storage_directory }}/logs/nfs-backup.log"
+readonly RETENTION_DAYS="{{ backup_retention_days }}"
+readonly TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+readonly ARCHIVE="${BACKUP_DIR}/nfs-${TIMESTAMP}.tar.gz"
+
+mkdir -p "$BACKUP_DIR" "$(dirname "$LOG_FILE")"
+exec >> >(tee -a "$LOG_FILE") 2>&1
+echo "[$(date -Is)] Bắt đầu backup NFS: ${SOURCE_DIR}"
+test -d "$SOURCE_DIR"
+
+# Ghi file tạm rồi đổi tên nguyên tử để không tạo backup dở dang.
+tmp_archive="${ARCHIVE}.tmp"
+trap 'rm -f "$tmp_archive"' EXIT
+tar --acls --xattrs --numeric-owner --one-file-system -czf "$tmp_archive" -C "$SOURCE_DIR" .
+mv "$tmp_archive" "$ARCHIVE"
+sha256sum "$ARCHIVE" > "${ARCHIVE}.sha256"
+
+# Chỉ xóa backup cũ sau khi archive và checksum mới đã hoàn tất.
+find "$BACKUP_DIR" -type f \( -name 'nfs-*.tar.gz' -o -name 'nfs-*.tar.gz.sha256' \) -mtime "+${RETENTION_DAYS}" -delete
+echo "[$(date -Is)] Backup NFS thành công: ${ARCHIVE}"

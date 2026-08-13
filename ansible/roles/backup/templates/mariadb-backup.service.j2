@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup MariaDB application database
+After=network-online.target remote-fs.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/backup-mariadb.sh
+User=root
+NoNewPrivileges=true
