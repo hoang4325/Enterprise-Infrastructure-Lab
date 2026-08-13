@@ -81,5 +81,6 @@
   ansible.builtin.file:
     path: "{{ backup_mount_directory }}/.ansible-write-test"
     state: absent
+  # File kiểm tra được tạo lại ở mỗi lần chạy; không để thao tác dọn dẹp làm bẩn idempotency.
+  changed_when: false
   when: backup_disk_enabled
-
