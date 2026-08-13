@@ -320,18 +320,18 @@ unreachable=0
 - [Các lỗi đã gặp và cách xử lý](docs/runbooks/troubleshooting-history.md)
 - [Kiểm thử nghiệm thu toàn bộ](docs/runbooks/acceptance-test.md)
 - [Triển khai Todo Spring Boot](docs/runbooks/todo-app.md)
+- [CI/CD Todo app bằng GitHub Actions](docs/runbooks/cicd-github-actions.md)
 
-## Định hướng DevOps
+## DevOps và CI/CD
 
-Sau khi hoàn thiện nền tảng hạ tầng, lab sẽ triển khai một ứng dụng nhỏ theo
-quy trình DevOps đầy đủ:
+Todo app có pipeline GitHub Actions với quy trình:
 
 ```text
 Git branch/PR
   -> CI: lint, unit test, security scan
-  -> Build Docker image theo commit SHA
-  -> Push Container Registry
-  -> CD qua Ansible
+  -> Build và scan Docker image theo commit SHA
+  -> Push GitHub Container Registry
+  -> CD qua self-hosted runner và Ansible
   -> Rolling deploy Web Server 1/2
   -> Health check và rollback
   -> Prometheus/Grafana/Alertmanager
@@ -345,17 +345,17 @@ Git branch/PR
 - API đọc/ghi dữ liệu trong `enterprise_app`.
 - Upload file vào NFS để kiểm chứng dữ liệu dùng chung giữa hai Web Server.
 
-Mỗi bản phát hành cần có image tag theo phiên bản hoặc commit SHA, migration
-database có kiểm soát, health check sau deploy và phương án rollback về bản
-trước đó.
+Mỗi release dùng image tag commit SHA, migration database có kiểm soát,
+readiness sau deploy và rollback bằng cách deploy lại SHA tốt trước đó. CD chạy
+rolling từng Web Server để HAProxy còn backend hoạt động.
 
 ## Hạn chế hiện tại và hướng phát triển
 
 Các thành phần sau chưa được triển khai:
 
-- Ứng dụng nghiệp vụ thật và pipeline CI/CD hoàn chỉnh.
-- Pipeline CI/CD tự động cho Todo app chưa được kết nối với GitHub Actions.
-- Container Registry và chiến lược release/rollback tự động.
+- CI/CD cần được kích hoạt bằng self-hosted runner và GitHub Secrets của môi
+  trường lab.
+- Rollback hiện là thao tác workflow thủ công theo commit SHA.
 - MariaDB chưa có replication hoặc Galera.
 - NFS chưa có storage redundancy.
 - Chưa có bản backup ngoài máy Storage.
@@ -364,9 +364,8 @@ Các thành phần sau chưa được triển khai:
 
 Thứ tự phát triển tiếp theo:
 
-1. Thêm test và pipeline CI cho Todo app.
-2. Bổ sung CI: test, lint, image build, dependency scan và secret scanning.
-3. Thêm Container Registry và CD rolling deploy qua Ansible.
-4. Thêm migration, rollback và kiểm thử backup dữ liệu ứng dụng.
-5. Triển khai MariaDB replication hoặc Galera.
-6. Tự động hóa provisioning VMware.
+1. Đăng ký self-hosted runner, khai báo GitHub Secrets và chạy pipeline đầu tiên.
+2. Thêm migration versioned và rollback tự động cho Todo app.
+3. Bổ sung dashboard Grafana cho metrics Spring Boot.
+4. Triển khai MariaDB replication hoặc Galera.
+5. Tự động hóa provisioning VMware.

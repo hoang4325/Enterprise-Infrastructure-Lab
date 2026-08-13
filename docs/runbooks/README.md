@@ -11,6 +11,7 @@ Các runbook dưới đây dùng cho bốn nhóm sự cố thường gặp trong
 - [Các lỗi đã gặp và cách xử lý](troubleshooting-history.md)
 - [Kiểm thử nghiệm thu toàn bộ](acceptance-test.md)
 - [Triển khai Todo Spring Boot](todo-app.md)
+- [CI/CD Todo app bằng GitHub Actions](cicd-github-actions.md)
 
 ## Nguyên tắc xử lý chung
 
