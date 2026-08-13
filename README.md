@@ -24,6 +24,7 @@ Lab đã hoàn thiện luồng dịch vụ chính và đã được kiểm chứ
 - Có role backup cho NFS/MariaDB và restore validation an toàn.
 - Có runbook kiểm thử nghiệm thu toàn bộ hạ tầng.
 - Có định hướng triển khai ứng dụng nhỏ theo quy trình DevOps.
+- Todo app Spring Boot đã có mã nguồn, Dockerfile và role triển khai hai Web Server.
 
 ## Kiến trúc
 
@@ -178,6 +179,8 @@ ansible/roles/monitoring/files/grafana/dashboards/infrastructure-overview.json
 .
 ├── architecture/
 │   └── architecture.png
+├── app/
+│   └── Todo Spring Boot application
 ├── ansible/
 │   ├── inventory.ini
 │   ├── playbooks/
@@ -270,6 +273,14 @@ Kiểm tra backup và restore:
 ansible-playbook -i inventory.ini \
   playbooks/backup_restore_validation.yml --ask-vault-pass
 ```
+
+Triển khai Todo app:
+
+```bash
+ansible-playbook -i inventory.ini playbooks/todo_app.yml --ask-vault-pass
+curl -k https://10.10.0.212/todo/
+curl -k https://10.10.0.212/readyz
+```
 ```
 
 Kiểm tra failover Web Server:
@@ -308,6 +319,7 @@ unreachable=0
 - [Backup và Restore](docs/runbooks/backup-restore.md)
 - [Các lỗi đã gặp và cách xử lý](docs/runbooks/troubleshooting-history.md)
 - [Kiểm thử nghiệm thu toàn bộ](docs/runbooks/acceptance-test.md)
+- [Triển khai Todo Spring Boot](docs/runbooks/todo-app.md)
 
 ## Định hướng DevOps
 
@@ -342,6 +354,7 @@ trước đó.
 Các thành phần sau chưa được triển khai:
 
 - Ứng dụng nghiệp vụ thật và pipeline CI/CD hoàn chỉnh.
+- Pipeline CI/CD tự động cho Todo app chưa được kết nối với GitHub Actions.
 - Container Registry và chiến lược release/rollback tự động.
 - MariaDB chưa có replication hoặc Galera.
 - NFS chưa có storage redundancy.
@@ -351,7 +364,7 @@ Các thành phần sau chưa được triển khai:
 
 Thứ tự phát triển tiếp theo:
 
-1. Xây ứng dụng nhỏ có MariaDB, NFS, `/healthz`, `/readyz` và `/metrics`.
+1. Thêm test và pipeline CI cho Todo app.
 2. Bổ sung CI: test, lint, image build, dependency scan và secret scanning.
 3. Thêm Container Registry và CD rolling deploy qua Ansible.
 4. Thêm migration, rollback và kiểm thử backup dữ liệu ứng dụng.
