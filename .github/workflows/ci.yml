@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  # Cho phép chạy CI đầu tiên hoặc chạy lại kiểm tra mà không cần tạo commit mới.
+  workflow_dispatch:
   pull_request:
     paths:
       - "app/**"
