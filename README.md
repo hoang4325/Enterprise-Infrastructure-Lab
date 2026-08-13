@@ -10,6 +10,7 @@ sự cố.
 Lab đã hoàn thiện luồng dịch vụ chính và đã được kiểm chứng:
 
 - HAProxy phân phối request đến hai Web Server.
+- Keepalived/VRRP cung cấp VIP `10.10.0.212` cho hai HAProxy.
 - HAProxy kiểm tra HTTP `GET /healthz` trước khi đưa backend vào phục vụ.
 - HTTP tự chuyển hướng sang HTTPS.
 - Hai Web Server dùng chung dữ liệu từ NFSv4.
@@ -21,6 +22,8 @@ Lab đã hoàn thiện luồng dịch vụ chính và đã được kiểm chứ
 - Playbook chạy lại đạt `changed=0` trên toàn bộ hạ tầng.
 - Có runbook cho service, disk, network và NFS.
 - Có role backup cho NFS/MariaDB và restore validation an toàn.
+- Có runbook kiểm thử nghiệm thu toàn bộ hạ tầng.
+- Có định hướng triển khai ứng dụng nhỏ theo quy trình DevOps.
 
 ## Kiến trúc
 
@@ -33,12 +36,19 @@ Lab đã hoàn thiện luồng dịch vụ chính và đã được kiểm chứ
                                |
                          HTTP / HTTPS
                                |
-                +------------------------------+
-                | HAProxy 10.10.0.210           |
-                | TLS termination + healthcheck |
-                +---------------+--------------+
-                                |
+                +---------------------------------------+
+                | VIP 10.10.0.212 - Keepalived/VRRP     |
+                +------------------+--------------------+
+                                   |
+                  +----------------+----------------+
+                  |                                 |
+        +---------v---------+             +---------v---------+
+        | HAProxy           |             | HAProxy 2         |
+        | 10.10.0.210       |             | 10.10.0.211       |
+        | MASTER             |             | BACKUP            |
+        +---------+----------+             +---------+---------+
                   +-------------+-------------+
+                                |
                   |                           |
         +---------v---------+       +---------v---------+
         | Web Server        |       | Web Server 2       |
@@ -66,11 +76,18 @@ Lab đã hoàn thiện luồng dịch vụ chính và đã được kiểm chứ
 | Nhóm | Hostname | IP | Vai trò |
 |---|---|---:|---|
 | `haproxy` | `loadbalancer` | `10.10.0.210` | HAProxy, HTTPS termination |
+| `haproxy` | `loadbalancer2` | `10.10.0.211` | HAProxy dự phòng, Keepalived |
 | `web` | `webserver` | `10.10.0.220` | Nginx, NFS client, MariaDB client |
 | `web` | `webserver2` | `10.10.0.221` | Nginx, NFS client, MariaDB client |
 | `database` | `mariadb` | `10.10.0.230` | MariaDB Server |
 | `storage` | `storagenfs` | `10.10.0.240` | NFS Server |
 | `monitoring` | `monitor` | `10.10.0.250` | Prometheus, Grafana, Alertmanager |
+
+VIP truy cập dịch vụ:
+
+```text
+10.10.0.212
+```
 
 ## Luồng hoạt động
 
@@ -78,8 +95,9 @@ Lab đã hoàn thiện luồng dịch vụ chính và đã được kiểm chứ
 
 ```text
 Client
-  -> HAProxy:80  -> redirect HTTPS
-  -> HAProxy:443
+  -> VIP 10.10.0.212
+  -> HAProxy active:80 -> redirect HTTPS
+  -> HAProxy active:443
   -> HTTP health check /healthz
   -> webserver hoặc webserver2:80
   -> Nginx
@@ -88,6 +106,10 @@ Client
 
 HAProxy chỉ chuyển request đến backend trả `200` cho endpoint `/healthz`. Khi
 một Web Server dừng, backend còn lại tiếp tục phục vụ request.
+
+Khi HAProxy chính hoặc Keepalived gặp lỗi, VIP chuyển sang `loadbalancer2`.
+HAProxy dự phòng vẫn dùng cùng cấu hình backend và tiếp tục kiểm tra Web
+Server.
 
 ### Web và dữ liệu
 
@@ -164,9 +186,11 @@ ansible/roles/monitoring/files/grafana/dashboards/infrastructure-overview.json
 │       ├── docker/
 │       ├── firewall/
 │       ├── haproxy/
+│       ├── keepalived/
 │       ├── mariadb/
 │       ├── monitoring/
 │       ├── node_exporter/
+│       ├── backup/
 │       ├── storagenfs/
 │       └── webserver/
 └── docs/
@@ -182,6 +206,7 @@ ansible/roles/monitoring/files/grafana/dashboards/infrastructure-overview.json
 - Máy điều khiển SSH được đến toàn bộ VM bằng user `hoangnh`.
 - Ansible và các collection cần thiết đã được cài đặt.
 - File Vault chứa Telegram token và mật khẩu MariaDB đã được mã hóa.
+- File Vault của Keepalived chứa mật khẩu VRRP đã được mã hóa.
 
 Kiểm tra kết nối:
 
@@ -205,6 +230,8 @@ ansible-playbook -i inventory.ini playbooks/mariadb.yml --ask-vault-pass
 ansible-playbook -i inventory.ini playbooks/storagenfs.yml --ask-vault-pass
 ansible-playbook -i inventory.ini playbooks/firewall.yml --ask-vault-pass
 ansible-playbook -i inventory.ini playbooks/monitoring.yml --ask-vault-pass
+ansible-playbook -i inventory.ini playbooks/backup.yml --ask-vault-pass
+ansible-playbook -i inventory.ini playbooks/keepalived.yml --ask-vault-pass
 ```
 
 ## Secrets
@@ -214,6 +241,7 @@ Các file secret không được commit:
 ```text
 ansible/group_vars/monitoring/vault.yml
 ansible/group_vars/database/vault.yml
+ansible/group_vars/haproxy/vault.yml
 ```
 
 Mở hoặc chỉnh sửa bằng Ansible Vault:
@@ -221,6 +249,7 @@ Mở hoặc chỉnh sửa bằng Ansible Vault:
 ```bash
 ansible-vault edit ansible/group_vars/monitoring/vault.yml
 ansible-vault edit ansible/group_vars/database/vault.yml
+ansible-vault edit ansible/group_vars/haproxy/vault.yml
 ```
 
 Không ghi Telegram token, mật khẩu MariaDB hoặc private key TLS vào README,
@@ -232,7 +261,15 @@ Kiểm tra HTTPS và health check:
 
 ```bash
 curl -k -I https://10.10.0.210/healthz
-curl -k https://10.10.0.210/
+curl -k -I https://10.10.0.212/healthz
+curl -k https://10.10.0.212/
+
+Kiểm tra backup và restore:
+
+```bash
+ansible-playbook -i inventory.ini \
+  playbooks/backup_restore_validation.yml --ask-vault-pass
+```
 ```
 
 Kiểm tra failover Web Server:
@@ -272,21 +309,51 @@ unreachable=0
 - [Các lỗi đã gặp và cách xử lý](docs/runbooks/troubleshooting-history.md)
 - [Kiểm thử nghiệm thu toàn bộ](docs/runbooks/acceptance-test.md)
 
+## Định hướng DevOps
+
+Sau khi hoàn thiện nền tảng hạ tầng, lab sẽ triển khai một ứng dụng nhỏ theo
+quy trình DevOps đầy đủ:
+
+```text
+Git branch/PR
+  -> CI: lint, unit test, security scan
+  -> Build Docker image theo commit SHA
+  -> Push Container Registry
+  -> CD qua Ansible
+  -> Rolling deploy Web Server 1/2
+  -> Health check và rollback
+  -> Prometheus/Grafana/Alertmanager
+```
+
+Ứng dụng mục tiêu gồm backend nhỏ, MariaDB và NFS:
+
+- `/healthz`: kiểm tra process ứng dụng.
+- `/readyz`: kiểm tra MariaDB và NFS.
+- `/metrics`: cung cấp metrics cho Prometheus.
+- API đọc/ghi dữ liệu trong `enterprise_app`.
+- Upload file vào NFS để kiểm chứng dữ liệu dùng chung giữa hai Web Server.
+
+Mỗi bản phát hành cần có image tag theo phiên bản hoặc commit SHA, migration
+database có kiểm soát, health check sau deploy và phương án rollback về bản
+trước đó.
+
 ## Hạn chế hiện tại và hướng phát triển
 
 Các thành phần sau chưa được triển khai:
 
-- HAProxy hiện vẫn là một điểm lỗi duy nhất; chưa có Keepalived/VRRP.
+- Ứng dụng nghiệp vụ thật và pipeline CI/CD hoàn chỉnh.
+- Container Registry và chiến lược release/rollback tự động.
 - MariaDB chưa có replication hoặc Galera.
 - NFS chưa có storage redundancy.
-- Backup NFS đã triển khai; backup/restore MariaDB cần chạy validation lần đầu.
-- Chưa thực hiện bài kiểm thử RTO/RPO chính thức.
+- Chưa có bản backup ngoài máy Storage.
+- Chưa thực hiện bài kiểm thử RTO/RPO chính thức với dữ liệu ứng dụng.
 - Chưa tự động tạo VM VMware bằng Terraform hoặc Ansible.
 
 Thứ tự phát triển tiếp theo:
 
-1. Hoàn tất chạy backup và restore validation MariaDB.
-2. Thêm Keepalived cho HAProxy.
-3. Triển khai MariaDB replication hoặc Galera.
-4. Tự động hóa provisioning VMware.
-5. Bổ sung CI kiểm tra Ansible syntax, lint và secret scanning.
+1. Xây ứng dụng nhỏ có MariaDB, NFS, `/healthz`, `/readyz` và `/metrics`.
+2. Bổ sung CI: test, lint, image build, dependency scan và secret scanning.
+3. Thêm Container Registry và CD rolling deploy qua Ansible.
+4. Thêm migration, rollback và kiểm thử backup dữ liệu ứng dụng.
+5. Triển khai MariaDB replication hoặc Galera.
+6. Tự động hóa provisioning VMware.
